@@ -3,8 +3,7 @@ module Trixer
 
     class << self
 
-      def from_adjacency_list(adjacency_list:, objects: nil)
-        objects = adjacency_list.keys if objects.nil?
+      def from_adjacency_list(adjacency_list:, objects:)
         matrix = Array.new(objects.size) { Array.new(objects.size) { 0 } }
         objects.each_with_index do |obj, i|
           adjacency_list[obj].each do |linked_obj|
