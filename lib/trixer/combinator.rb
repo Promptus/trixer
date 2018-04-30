@@ -5,20 +5,24 @@ module Trixer
     attr_reader :size
     attr_reader :objects
 
-    def initialize(matrix: nil, adjacency_list: nil)
-      if adjacency_list
-        @objects = adjacency_list.keys
-        @matrix = Matrix.from_adjacency_list(adjacency_list: adjacency_list, objects: @objects)
-      elsif matrix
-        @matrix = matrix.dup
-      else
-        raise 'Provide either a matrix or an adjacency list'
+    class << self
+
+      def combinations(adjacency_list:, objects: nil)
+        objects ||= adjacency_list.keys
+        matrix = Matrix.from_adjacency_list(adjacency_list: adjacency_list, objects: objects)
+        Combinator.new(matrix: matrix, objects: objects).combinations
       end
+
+    end
+
+    def initialize(matrix:, objects: nil)
+      @matrix = matrix.dup
+      @objects = objects
       @size = @matrix.size
       @groups = {}
     end
 
-    def combinations(objects: nil)
+    def combinations
       calculate if @groups.empty?
       res = []
       @groups.each do |group_size, sub_groups|

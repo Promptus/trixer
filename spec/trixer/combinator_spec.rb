@@ -109,7 +109,7 @@ RSpec.describe Trixer::Combinator do
     end
   end
 
-  describe '#combinations' do
+  describe '::combinations' do
     let(:adjacency_list) do
       {
         '201' => ['202'],
@@ -136,7 +136,7 @@ RSpec.describe Trixer::Combinator do
         '222' => ['221'],
       }
     end
-    subject { Trixer::Combinator.new(adjacency_list: adjacency_list).combinations }
+    subject { Trixer::Combinator.combinations(adjacency_list: adjacency_list) }
 
     it { expect(subject.size).to eql(36) }
 
