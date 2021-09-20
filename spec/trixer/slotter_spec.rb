@@ -1,17 +1,20 @@
 # encoding: utf-8
-RSpec.describe Trixer::Slotter do
+
+include Trixer
+
+RSpec.describe Slotter do
   let(:slots) { (64..73).to_a } # 16:00 - 18:15
   let(:slot_size) { 4 }
-  let(:matrix) { Trixer::Slotter.new(slots: slots, slot_size: slot_size, places: places, links: links, bookings: bookings) }
+  let(:matrix) { Slotter.new(slots: slots, slot_size: slot_size, places: places, links: links, bookings: bookings) }
   
-  let(:booking1) { Trixer::Slotter::Booking.new(id: 1, capacity: 4, slot: 66) } # 16:30 - 17:30
-  let(:booking2) { Trixer::Slotter::Booking.new(id: 2, capacity: 2, slot: 64) } # 16:00 - 17:00
-  let(:booking3) { Trixer::Slotter::Booking.new(id: 3, capacity: 2, slot: 68) } # 17:00 - 18:00
+  let(:booking1) { Slotter::Booking.new(id: 1, capacity: 4, slot: 66) } # 16:30 - 17:30
+  let(:booking2) { Slotter::Booking.new(id: 2, capacity: 2, slot: 64) } # 16:00 - 17:00
+  let(:booking3) { Slotter::Booking.new(id: 3, capacity: 2, slot: 68) } # 17:00 - 18:00
   let(:bookings) { [booking1, booking2, booking3] }
 
-  let(:table1) { Trixer::Slotter::Place.new(id: 1, capacity: 2) }
-  let(:table2) { Trixer::Slotter::Place.new(id: 2, capacity: 2) }
-  let(:table3) { Trixer::Slotter::Place.new(id: 3, capacity: 4) }
+  let(:table1) { Slotter::Place.new(id: 1, capacity: 2) }
+  let(:table2) { Slotter::Place.new(id: 2, capacity: 2) }
+  let(:table3) { Slotter::Place.new(id: 3, capacity: 4) }
   let(:places) { [table1, table2, table3] }
 
   let(:links) { { 1 => [2], 2 => [3] } }
@@ -24,19 +27,19 @@ RSpec.describe Trixer::Slotter do
   # 3/4  -  -  1  1  1  1  +  +  +  +
 
 
-  describe 'total_slotpax' do
-    subject { matrix.total_slotpax }
+  describe 'total_slotcapacity' do
+    subject { matrix.total_slotcapacity }
 
     it { is_expected.to eql(8) }
 
     context do
       let(:places) do
         [
-          Trixer::Slotter::Place.new(id: 1, capacity: 2),
-          Trixer::Slotter::Place.new(id: 2, capacity: 2),
-          Trixer::Slotter::Place.new(id: 3, capacity: 4),
-          Trixer::Slotter::Place.new(id: 4, capacity: 6),
-          Trixer::Slotter::Place.new(id: 5, capacity: 8),
+          Slotter::Place.new(id: 1, capacity: 2),
+          Slotter::Place.new(id: 2, capacity: 2),
+          Slotter::Place.new(id: 3, capacity: 4),
+          Slotter::Place.new(id: 4, capacity: 6),
+          Slotter::Place.new(id: 5, capacity: 8),
         ]
       end
       it { is_expected.to eql(22) }
@@ -86,8 +89,8 @@ RSpec.describe Trixer::Slotter do
     end
   end
 
-  describe 'free_pax_index' do
-    subject { matrix.free_pax_index[slot] }
+  describe 'free_capacity_index' do
+    subject { matrix.free_capacity_index[slot] }
 
     let(:slot) { 64 }
     it { is_expected.to eql(2) }
@@ -125,45 +128,45 @@ RSpec.describe Trixer::Slotter do
     # 3/4  -  -  1  1  1  1  +  +  +  +
 
     context "adds booking to table 2" do
-      let(:booking) { Trixer::Slotter::Booking.new(id: 4, capacity: 2, slot: 66) }
+      let(:booking) { Slotter::Booking.new(id: 4, capacity: 2, slot: 66) }
       it { is_expected.to be_truthy }
       it { expect { subject }.to change { booking.places }.from(nil).to(Set.new([2])) }
-      it { expect { subject }.to change { matrix.free_pax_index[66] }.from(2).to(0) }
+      it { expect { subject }.to change { matrix.free_capacity_index[66] }.from(2).to(0) }
       it { expect { subject }.to change { matrix.occupied_tables_index[66] }.from(Set.new([3,1])).to(Set.new([3,1,2])) }
     end
     
     context "adds booking to table 2 with capacity 1" do
-      let(:booking) { Trixer::Slotter::Booking.new(id: 4, capacity: 1, slot: 66) }
+      let(:booking) { Slotter::Booking.new(id: 4, capacity: 1, slot: 66) }
       it { is_expected.to be_truthy }
       it { expect { subject }.to change { booking.places }.from(nil).to(Set.new([2])) }
-      it { expect { subject }.to change { matrix.free_pax_index[66] }.from(2).to(0) }
+      it { expect { subject }.to change { matrix.free_capacity_index[66] }.from(2).to(0) }
       it { expect { subject }.to change { matrix.occupied_tables_index[66] }.from(Set.new([3,1])).to(Set.new([3,1,2])) }
     end
 
     context "not enough free capacity" do
-      let(:booking) { Trixer::Slotter::Booking.new(id: 4, capacity: 3, slot: 66) }
+      let(:booking) { Slotter::Booking.new(id: 4, capacity: 3, slot: 66) }
       it { is_expected.to be_falsey }
       it { expect { subject }.to_not change { booking.places } }
-      it { expect { subject }.to_not change { matrix.free_pax_index[66] } }
+      it { expect { subject }.to_not change { matrix.free_capacity_index[66] } }
       it { expect { subject }.to_not change { matrix.occupied_tables_index[66] } }
     end
 
     context "too close to closing time" do
-      let(:booking) { Trixer::Slotter::Booking.new(id: 4, capacity: 2, slot: 71) }
+      let(:booking) { Slotter::Booking.new(id: 4, capacity: 2, slot: 71) }
       it { is_expected.to be_falsey }
       it { expect { subject }.to_not change { booking.places } }
-      it { expect { subject }.to_not change { matrix.free_pax_index[71] } }
+      it { expect { subject }.to_not change { matrix.free_capacity_index[71] } }
       it { expect { subject }.to_not change { matrix.occupied_tables_index[71] } }
     end
 
     context "combined places" do
       let(:bookings) { [] }
-      let(:booking) { Trixer::Slotter::Booking.new(id: 1, capacity: 6, slot: 66) }
+      let(:booking) { Slotter::Booking.new(id: 1, capacity: 6, slot: 66) }
 
       it { is_expected.to be_truthy }
       it { expect { subject }.to change { booking.places }.from(nil).to(Set.new([2,3])) }
-      it { expect { subject }.to change { matrix.free_pax_index[66] }.from(8).to(2) }
-      it { expect { subject }.to change { matrix.free_pax_index[64] }.from(8).to(2) }
+      it { expect { subject }.to change { matrix.free_capacity_index[66] }.from(8).to(2) }
+      it { expect { subject }.to change { matrix.free_capacity_index[64] }.from(8).to(2) }
       it { expect { subject }.to change { matrix.occupied_tables_index[66] }.from(Set.new).to(Set.new([2,3])) }
     end
   end

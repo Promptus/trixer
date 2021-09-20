@@ -10,13 +10,13 @@ module Trixer
     attr_reader :slot_size
     
     # maximum capacity per slot
-    attr_reader :total_slotpax
+    attr_reader :total_slotcapacity
 
     # occupied places per slot
     # slot => [t1, t3]
     attr_reader :occupied_tables_index
 
-    attr_reader :free_pax_index
+    attr_reader :free_capacity_index
 
     # returns all bookings as internal structs for the given date
     attr_reader :bookings
@@ -34,10 +34,10 @@ module Trixer
       @places = places
       # fill missing links with empty array
       @links = places.inject(links || {}) { |h,table| h[table.id] ? h : h.merge(table.id => []) }
-      @total_slotpax ||= places.sum(&:capacity)
+      @total_slotcapacity ||= places.sum(&:capacity)
       @table_index = places.inject({}) { |h, table| h.merge(table.id => table) }
       @occupied_tables_index = slots.inject({}) { |h, slot| h.merge(slot => Set.new) }
-      @free_pax_index = slots.inject({}) { |h, slot| h.merge(slot => @total_slotpax) }
+      @free_capacity_index = slots.inject({}) { |h, slot| h.merge(slot => @total_slotcapacity) }
       @bookings = bookings
       @booking_index = bookings.inject({}) { |h, booking| h.merge(booking.id => booking) }
       @bookings.sort { |b1,b2| b2.capacity <=> b1.capacity }.each { |booking| add_booking(booking: booking) }
@@ -53,9 +53,9 @@ module Trixer
         @capacity_index[table.capacity] << Set.new([table.id])
       end
       Trixer::Combinator.combinations(adjacency_list: links, objects: places.map(&:id)).each do |comb|
-        comb_pax = comb.inject(0) { |sum, table_id| sum += table_index[table_id].capacity }
-        @capacity_index[comb_pax] ||= []
-        @capacity_index[comb_pax] << Set.new(comb)
+        comb_capacity = comb.inject(0) { |sum, table_id| sum += table_index[table_id].capacity }
+        @capacity_index[comb_capacity] ||= []
+        @capacity_index[comb_capacity] << Set.new(comb)
       end
       # sort from smaller combinations to bigger combinations 
       @capacity_index.each do |capacity, comb|
@@ -68,7 +68,7 @@ module Trixer
       slot = booking.slot
       occupied_tables = occupied_tables_index[slot]
       # not enough free seats for this booking
-      return false if free_pax_index[slot] < booking.capacity
+      return false if free_capacity_index[slot] < booking.capacity
 
       capacity_index.each do |capacity, combinations|
         next if capacity < booking.capacity
@@ -92,8 +92,8 @@ module Trixer
           (from_slot..to_slot).each do |s|
             next if @occupied_tables_index[s].nil?
             @occupied_tables_index[s] = @occupied_tables_index[s] + comb
-            @free_pax_index[s] = total_slotpax - occupied_tables_index[s].sum { |id| table_index[id].capacity }
-            raise "free capacity is negative (#{@free_pax_index[s]}) at slot #{s}" if @free_pax_index[s] < 0
+            @free_capacity_index[s] = total_slotcapacity - occupied_tables_index[s].sum { |id| table_index[id].capacity }
+            raise "free capacity is negative (#{@free_capacity_index[s]}) at slot #{s}" if @free_capacity_index[s] < 0
           end
           booking.places = comb
           return true
