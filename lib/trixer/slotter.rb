@@ -14,7 +14,7 @@ module Trixer
 
     # occupied places per slot
     # slot => [t1, t3]
-    attr_reader :occupied_tables_index
+    attr_reader :occupied_places_index
 
     attr_reader :free_capacity_index
 
@@ -25,7 +25,7 @@ module Trixer
     # returns all open places as internal structs for the given date
     # they should be sorted by capacity and number
     attr_reader :places
-    attr_reader :table_index
+    attr_reader :place_index
     attr_reader :links
 
     def initialize(slots:, slot_size:, places:, links:, bookings:)
@@ -33,10 +33,10 @@ module Trixer
       @slot_size = slot_size
       @places = places
       # fill missing links with empty array
-      @links = places.inject(links || {}) { |h,table| h[table.id] ? h : h.merge(table.id => []) }
+      @links = places.inject(links || {}) { |h,place| h[place.id] ? h : h.merge(place.id => []) }
       @total_slotcapacity ||= places.sum(&:capacity)
-      @table_index = places.inject({}) { |h, table| h.merge(table.id => table) }
-      @occupied_tables_index = slots.inject({}) { |h, slot| h.merge(slot => Set.new) }
+      @place_index = places.inject({}) { |h, place| h.merge(place.id => place) }
+      @occupied_places_index = slots.inject({}) { |h, slot| h.merge(slot => Set.new) }
       @free_capacity_index = slots.inject({}) { |h, slot| h.merge(slot => @total_slotcapacity) }
       @bookings = bookings
       @booking_index = bookings.inject({}) { |h, booking| h.merge(booking.id => booking) }
@@ -48,12 +48,12 @@ module Trixer
       return @capacity_index if @capacity_index
 
       @capacity_index = {}
-      places.each do |table|
-        @capacity_index[table.capacity] ||= []
-        @capacity_index[table.capacity] << Set.new([table.id])
+      places.each do |place|
+        @capacity_index[place.capacity] ||= []
+        @capacity_index[place.capacity] << Set.new([place.id])
       end
       Trixer::Combinator.combinations(adjacency_list: links, objects: places.map(&:id)).each do |comb|
-        comb_capacity = comb.inject(0) { |sum, table_id| sum += table_index[table_id].capacity }
+        comb_capacity = comb.inject(0) { |sum, place_id| sum += place_index[place_id].capacity }
         @capacity_index[comb_capacity] ||= []
         @capacity_index[comb_capacity] << Set.new(comb)
       end
@@ -66,15 +66,18 @@ module Trixer
 
     def add_booking(booking:, place: nil)
       slot = booking.slot
-      occupied_tables = occupied_tables_index[slot]
+      occupied_places = occupied_places_index[slot]
       # not enough free seats for this booking
       return false if free_capacity_index[slot] < booking.capacity
 
       capacity_index.each do |capacity, combinations|
         next if capacity < booking.capacity
         combinations.each do |comb|
-          # skip table combination which contains an occupied table 
-          next if (comb & occupied_tables).any?
+          # skip place combination which contains an occupied place 
+          next if (comb & occupied_places).any?
+
+          # skip if combination does not include desired place
+          next if place && !comb.include?(place.id)
 
           # mark slot_size-1 slots before and after the booked slot as occupied
           # for example: slot_size 4 (1 hour)
@@ -87,12 +90,12 @@ module Trixer
           to_slot = slot+slot_size-1
 
           # the booking would end after the last slot
-          next if @occupied_tables_index[to_slot].nil?
+          next if @occupied_places_index[to_slot].nil?
           
           (from_slot..to_slot).each do |s|
-            next if @occupied_tables_index[s].nil?
-            @occupied_tables_index[s] = @occupied_tables_index[s] + comb
-            @free_capacity_index[s] = total_slotcapacity - occupied_tables_index[s].sum { |id| table_index[id].capacity }
+            next if @occupied_places_index[s].nil?
+            @occupied_places_index[s] = @occupied_places_index[s] + comb
+            @free_capacity_index[s] = total_slotcapacity - occupied_places_index[s].sum { |id| place_index[id].capacity }
             raise "free capacity is negative (#{@free_capacity_index[s]}) at slot #{s}" if @free_capacity_index[s] < 0
           end
           booking.places = comb

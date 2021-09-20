@@ -12,10 +12,10 @@ RSpec.describe Slotter do
   let(:booking3) { Slotter::Booking.new(id: 3, capacity: 2, slot: 68) } # 17:00 - 18:00
   let(:bookings) { [booking1, booking2, booking3] }
 
-  let(:table1) { Slotter::Place.new(id: 1, capacity: 2) }
-  let(:table2) { Slotter::Place.new(id: 2, capacity: 2) }
-  let(:table3) { Slotter::Place.new(id: 3, capacity: 4) }
-  let(:places) { [table1, table2, table3] }
+  let(:place1) { Slotter::Place.new(id: 1, capacity: 2) }
+  let(:place2) { Slotter::Place.new(id: 2, capacity: 2) }
+  let(:place3) { Slotter::Place.new(id: 3, capacity: 4) }
+  let(:places) { [place1, place2, place3] }
 
   let(:links) { { 1 => [2], 2 => [3] } }
 
@@ -46,10 +46,10 @@ RSpec.describe Slotter do
     end
   end
 
-  describe 'table_index' do
-    subject { matrix.table_index }
+  describe 'place_index' do
+    subject { matrix.place_index }
 
-    it { is_expected.to eql(1 => table1, 2 => table2, 3 => table3) }
+    it { is_expected.to eql(1 => place1, 2 => place2, 3 => place3) }
   end
 
   describe 'booking_index' do
@@ -72,8 +72,8 @@ RSpec.describe Slotter do
 
   end
 
-  describe 'occupied_tables_index' do
-    subject { matrix.occupied_tables_index[slot] }
+  describe 'occupied_places_index' do
+    subject { matrix.occupied_places_index[slot] }
 
     let(:slot) { 64 }
     it { is_expected.to eql(Set.new([1, 3])) }
@@ -117,7 +117,8 @@ RSpec.describe Slotter do
   end
 
   describe 'add_booking' do
-    subject { matrix.add_booking(booking: booking) }
+    let(:place) { nil }
+    subject { matrix.add_booking(booking: booking, place: place) }
 
     # initial state
     #     16:00       17:00       18:00
@@ -127,20 +128,20 @@ RSpec.describe Slotter do
     # 2/2  +  +  +  +  +  +  +  +  +  +
     # 3/4  -  -  1  1  1  1  +  +  +  +
 
-    context "adds booking to table 2" do
+    context "adds booking to place 2" do
       let(:booking) { Slotter::Booking.new(id: 4, capacity: 2, slot: 66) }
       it { is_expected.to be_truthy }
       it { expect { subject }.to change { booking.places }.from(nil).to(Set.new([2])) }
       it { expect { subject }.to change { matrix.free_capacity_index[66] }.from(2).to(0) }
-      it { expect { subject }.to change { matrix.occupied_tables_index[66] }.from(Set.new([3,1])).to(Set.new([3,1,2])) }
+      it { expect { subject }.to change { matrix.occupied_places_index[66] }.from(Set.new([3,1])).to(Set.new([3,1,2])) }
     end
     
-    context "adds booking to table 2 with capacity 1" do
+    context "adds booking to place 2 with capacity 1" do
       let(:booking) { Slotter::Booking.new(id: 4, capacity: 1, slot: 66) }
       it { is_expected.to be_truthy }
       it { expect { subject }.to change { booking.places }.from(nil).to(Set.new([2])) }
       it { expect { subject }.to change { matrix.free_capacity_index[66] }.from(2).to(0) }
-      it { expect { subject }.to change { matrix.occupied_tables_index[66] }.from(Set.new([3,1])).to(Set.new([3,1,2])) }
+      it { expect { subject }.to change { matrix.occupied_places_index[66] }.from(Set.new([3,1])).to(Set.new([3,1,2])) }
     end
 
     context "not enough free capacity" do
@@ -148,7 +149,7 @@ RSpec.describe Slotter do
       it { is_expected.to be_falsey }
       it { expect { subject }.to_not change { booking.places } }
       it { expect { subject }.to_not change { matrix.free_capacity_index[66] } }
-      it { expect { subject }.to_not change { matrix.occupied_tables_index[66] } }
+      it { expect { subject }.to_not change { matrix.occupied_places_index[66] } }
     end
 
     context "too close to closing time" do
@@ -156,7 +157,7 @@ RSpec.describe Slotter do
       it { is_expected.to be_falsey }
       it { expect { subject }.to_not change { booking.places } }
       it { expect { subject }.to_not change { matrix.free_capacity_index[71] } }
-      it { expect { subject }.to_not change { matrix.occupied_tables_index[71] } }
+      it { expect { subject }.to_not change { matrix.occupied_places_index[71] } }
     end
 
     context "combined places" do
@@ -167,7 +168,19 @@ RSpec.describe Slotter do
       it { expect { subject }.to change { booking.places }.from(nil).to(Set.new([2,3])) }
       it { expect { subject }.to change { matrix.free_capacity_index[66] }.from(8).to(2) }
       it { expect { subject }.to change { matrix.free_capacity_index[64] }.from(8).to(2) }
-      it { expect { subject }.to change { matrix.occupied_tables_index[66] }.from(Set.new).to(Set.new([2,3])) }
+      it { expect { subject }.to change { matrix.occupied_places_index[66] }.from(Set.new).to(Set.new([2,3])) }
+    end
+
+    context "special place required" do
+      let(:bookings) { [] }
+      let(:place) { place2 }
+      let(:booking) { Slotter::Booking.new(id: 1, capacity: 2, slot: 66) }
+
+      it { is_expected.to be_truthy }
+      it { expect { subject }.to change { booking.places }.from(nil).to(Set.new([2])) }
+      it { expect { subject }.to change { matrix.free_capacity_index[66] }.from(8).to(6) }
+      it { expect { subject }.to change { matrix.free_capacity_index[64] }.from(8).to(6) }
+      it { expect { subject }.to change { matrix.occupied_places_index[66] }.from(Set.new).to(Set.new([2])) }
     end
   end
 end
