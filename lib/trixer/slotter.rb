@@ -61,7 +61,7 @@ module Trixer
       occupied_places_index.values_at(*booking_slots).inject(Set.new) { |s,op| s | op }
     end
 
-    def add_booking(booking:, place: nil)
+    def add_booking(booking:, place_restriction: nil)
       slot = booking.slot
       booking_slots = (slot..slot+booking.duration-1).to_a
 
@@ -81,7 +81,7 @@ module Trixer
           next if (comb & occupied_places).any?
 
           # skip if combination does not include desired place
-          next if place && !comb.include?(place.id)
+          next if place_restriction && place_restriction.any? && (comb & place_restriction).empty?
           
           # mark booking.duration-1 slots after the booked slot as occupied
           # for example: duration 4 (1 hour)

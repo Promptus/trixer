@@ -122,8 +122,8 @@ RSpec.describe Slotter do
       end
     end
     describe 'add_booking' do
-      let(:place) { nil }
-      subject { matrix.add_booking(booking: booking, place: place) }
+      let(:place_restriction) { nil }
+      subject { matrix.add_booking(booking: booking, place_restriction: place_restriction) }
     
       context "adds booking to place 2" do
         let(:booking) { Slotter::Booking.new(id: 4, duration: 4, amount: 2, slot: 66) }
@@ -208,8 +208,8 @@ RSpec.describe Slotter do
   end
 
   describe 'add_booking' do
-    let(:place) { nil }
-    subject { matrix.add_booking(booking: booking, place: place) }
+    let(:place_restriction) { nil }
+    subject { matrix.add_booking(booking: booking, place_restriction: place_restriction) }
 
     context "combined places" do
       let(:booking) { Slotter::Booking.new(id: 1, duration: 4, amount: 6, slot: 66) }
@@ -222,7 +222,7 @@ RSpec.describe Slotter do
     end
 
     context "special place required" do
-      let(:place) { place2 }
+      let(:place_restriction) { [place2.id] }
       let(:booking) { Slotter::Booking.new(id: 1, duration: 4, amount: 2, slot: 66) }
 
       it { is_expected.to be_truthy }
