@@ -233,3 +233,59 @@ RSpec.describe Slotter do
     end
   end
 end
+
+# big matrix
+RSpec.describe Slotter do
+  let(:slots) { (56..80).to_a } # 14:00 - 20:00
+  
+  let(:places) do
+    (1..100).map do |id|
+      Slotter::Place.new(id: id, capacity: (id/33)*2+2)
+    end
+  end
+  
+  let(:links) do
+    links = {}
+    (1..50).each do |id|
+      links[id] = [100-id]
+    end
+    links
+  end
+  
+  let(:matrix) { Slotter.new(slots: slots, places: places, links: links) }
+
+  describe 'total_slotcapacity' do
+    subject { matrix.total_slotcapacity }
+
+    it { is_expected.to eql(410) }
+  end
+
+  describe 'places' do
+    subject { matrix.place_index.values.map(&:capacity).uniq }
+
+    it { is_expected.to eql([2,4,6,8]) }
+  end
+
+  describe 'capacity_index' do
+    subject { matrix.capacity_index[10] }
+
+    it do
+      is_expected.to eql([Set.new([1, 99]), Set.new([33, 67]), Set.new([34, 66])])
+    end
+  end
+
+  context 'performance test' do
+    
+    it do
+      puts "#{places.size} places"
+      puts "#{links.size} links"
+      t0 = Time.now
+      (1..500).each do |id|
+        matrix.add_booking(booking: Slotter::Booking.new(id: id, duration: [2,4,6].sample, amount: [2,4,6,8].sample, slot: slots.sample))
+      end
+      puts "added #{matrix.booking_index.values.size} bookings in #{(1000*(Time.now-t0)).round}ms"
+    end
+
+  end
+
+end
