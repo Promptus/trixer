@@ -71,24 +71,24 @@ module Trixer
       occupied_places_index.values_at(*booking_slots).inject(Set.new) { |s,op| s | op }
     end
 
-    def add_booking(booking:, place_restriction: nil)
+    def add_booking(booking:, place_restriction: nil, dry_run: false)
       # total limit reached
-      return if limit && (total + booking.amount > limit)
+      return :total_limit_reached if limit && (total + booking.amount > limit)
 
       slot = booking.slot
 
       # slot limit reached
-      return if slot_limit && (@amount_index[slot] + booking.amount > slot_limit)
+      return :slot_limit_reached if slot_limit && (@amount_index[slot] + booking.amount > slot_limit)
 
       booking_slots = (slot..slot+booking.duration-1).to_a
 
       # there is some slot that would be booked which is not available
       # i.e. [1,2,3,5,6,7] & [3,4,5] = [3,5] => slot 4 is not available
       # or   [1,2,3,4] & [3,4,5] = [3,4] => slot 5 is not available
-      return false if (slots & booking_slots).size != booking.duration
+      return :slot_unavailable if (slots & booking_slots).size != booking.duration
 
       # not enough free slots for this booking
-      return false if free_capacity_index[slot] < booking.amount
+      return :out_of_capacity if free_capacity_index[slot] < booking.amount
 
       occupied_places = occupied_places_for(booking_slots: booking_slots)
       capacity_index.each do |capacity, combinations|
@@ -100,6 +100,9 @@ module Trixer
           # skip if combination does not include desired place
           next if place_restriction && place_restriction.any? && (comb & place_restriction).empty?
           
+          # don't add booking, just inform that it fits
+          return true if dry_run
+
           # mark booking.duration-1 slots after the booked slot as occupied
           # for example: duration 4 (1 hour)
           # booking at 17:00:
@@ -118,11 +121,19 @@ module Trixer
         end
       end
       # booking does not fit into the given slot
-      return false
+      return :no_combination_found
     end
   end
 
   def open_slots(around_slot:, amount:, duration:, limit: 4)
-
+    found_slots = []
+    slots.sort { |x,y| (around_slot-x).abs <=> (around_slot-y).abs }.each do |slot|
+      booking = Slotter::Booking.new(slot: slot, amount: amount, duration: duration)
+      if add_booking(booking: booking, dry_run: true) == true
+        found_slots << slot
+      end
+      break if found_slots.size >= limit
+    end
+    found_slots.sort
   end
 end

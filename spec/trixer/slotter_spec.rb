@@ -123,6 +123,7 @@ RSpec.describe Slotter do
         it { is_expected.to eql(8) }
       end
     end
+
     describe 'add_booking' do
       let(:place_restriction) { nil }
       subject { matrix.add_booking(booking: booking, place_restriction: place_restriction) }
@@ -138,7 +139,7 @@ RSpec.describe Slotter do
 
         context "slot limit reached" do
           let(:slot_limit) { 4 }
-          it { is_expected.to be_falsey }
+          it { is_expected.to eql(:slot_limit_reached) }
           it { expect { subject }.to_not change { booking.places } }
         end
       end
@@ -169,7 +170,7 @@ RSpec.describe Slotter do
 
       context "not enough space for (4/3) at 64" do
         let(:booking) { Slotter::Booking.new(id: 4, duration: 3, amount: 4, slot: 64) }
-        it { is_expected.to be_falsey }
+        it { is_expected.to eql(:no_combination_found) }
         it { expect { subject }.to_not change { booking.places } }
       end
 
@@ -184,20 +185,20 @@ RSpec.describe Slotter do
 
         context "total limit reached" do
           let(:limit) { 10 }
-          it { is_expected.to be_falsey }
+          it { is_expected.to eql(:total_limit_reached) }
           it { expect { subject }.to_not change { booking.places } }
         end
       end
 
       context "not enough space for (4/3) at 72" do
         let(:booking) { Slotter::Booking.new(id: 4, duration: 3, amount: 4, slot: 72) }
-        it { is_expected.to be_falsey }
+        it { is_expected.to eql(:slot_unavailable) }
         it { expect { subject }.to_not change { booking.places } }
       end
   
       context "not enough free capacity" do
         let(:booking) { Slotter::Booking.new(id: 4, duration: 4, amount: 3, slot: 66) }
-        it { is_expected.to be_falsey }
+        it { is_expected.to eql(:out_of_capacity) }
         it { expect { subject }.to_not change { booking.places } }
         it { expect { subject }.to_not change { matrix.free_capacity_index[66] } }
         it { expect { subject }.to_not change { matrix.occupied_places_index[66] } }
@@ -205,7 +206,7 @@ RSpec.describe Slotter do
   
       context "too close to closing time" do
         let(:booking) { Slotter::Booking.new(id: 4, duration: 4, amount: 2, slot: 71) }
-        it { is_expected.to be_falsey }
+        it { is_expected.to eql(:slot_unavailable) }
         it { expect { subject }.to_not change { booking.places } }
         it { expect { subject }.to_not change { matrix.free_capacity_index[71] } }
         it { expect { subject }.to_not change { matrix.occupied_places_index[71] } }
@@ -221,6 +222,53 @@ RSpec.describe Slotter do
         it { expect { subject }.to change { booking.places }.from(nil).to(Set.new([1,2])) }
         it { expect { subject }.to change { matrix.free_capacity_index[72] }.from(4).to(0) }
         it { expect { subject }.to change { matrix.free_capacity_index[73] }.from(4).to(0) }
+      end
+    end
+
+    describe 'open_slots' do
+      let(:amount) { 2 }
+      let(:around_slot) { 70 }
+      let(:duration) { 4 }
+
+      subject { matrix.open_slots(around_slot: around_slot, amount: amount, duration: duration, limit: 4) }
+
+      it { is_expected.to eql([67, 68, 69, 70]) }
+
+      context do
+        before { matrix.add_booking(booking: Slotter::Booking.new(id: 4, duration: 4, amount: 2, slot: 68)) }
+        it { is_expected.to eql([64, 70]) }
+      end
+
+      context do
+        before { matrix.add_booking(booking: Slotter::Booking.new(id: 4, duration: 4, amount: 2, slot: 70)) }
+        it { is_expected.to eql([64, 65, 66, 70]) }
+      end
+
+      context do
+        let(:amount) { 4 }
+        it { is_expected.to eql([70]) }
+      end
+
+      context do
+        let(:amount) { 6 }
+        it { is_expected.to eql([70]) }
+      end
+
+      context do
+        let(:duration) { 7 }
+        it { is_expected.to eql([64, 65, 66, 67]) }
+      end
+
+      context do
+        let(:duration) { 2 }
+        before { matrix.add_booking(booking: Slotter::Booking.new(id: 4, duration: 8, amount: 2, slot: 66)) }
+        it { is_expected.to eql([64, 70, 71, 72]) }
+      end
+
+      context do
+        let(:duration) { 6 }
+        before { matrix.add_booking(booking: Slotter::Booking.new(id: 4, duration: 8, amount: 2, slot: 66)) }
+        it { is_expected.to eql([]) }
       end
     end
   end
