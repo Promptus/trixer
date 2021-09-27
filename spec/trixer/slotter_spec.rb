@@ -4,7 +4,9 @@ include Trixer
 
 RSpec.describe Slotter do
   let(:slots) { (64..73).to_a } # 16:00 - 18:15
-  let(:matrix) { Slotter.new(slots: slots, places: places, links: links) }
+  let(:limit) { nil }
+  let(:slot_limit) { nil }
+  let(:matrix) { Slotter.new(slots: slots, places: places, links: links, limit: limit, slot_limit: slot_limit) }
   
   let(:place1) { Slotter::Place.new(id: 1, capacity: 2) }
   let(:place2) { Slotter::Place.new(id: 2, capacity: 2) }
@@ -131,6 +133,14 @@ RSpec.describe Slotter do
         it { expect { subject }.to change { booking.places }.from(nil).to(Set.new([2])) }
         it { expect { subject }.to change { matrix.free_capacity_index[66] }.from(2).to(0) }
         it { expect { subject }.to change { matrix.occupied_places_index[66] }.from(Set.new([3,1])).to(Set.new([3,1,2])) }
+        it { expect { subject }.to change { matrix.amount_index[66] }.from(4).to(6) }
+        it { expect { subject }.to_not change { matrix.amount_index[67] } }
+
+        context "slot limit reached" do
+          let(:slot_limit) { 4 }
+          it { is_expected.to be_falsey }
+          it { expect { subject }.to_not change { booking.places } }
+        end
       end
       
       context "adds booking to place 2 with capacity 1" do
@@ -169,6 +179,14 @@ RSpec.describe Slotter do
         it { expect { subject }.to change { booking.places }.from(nil).to(Set.new([3])) }
         it { expect { subject }.to change { matrix.free_capacity_index[72] }.from(8).to(4) }
         it { expect { subject }.to change { matrix.free_capacity_index[73] }.from(8).to(4) }
+        it { expect { subject }.to change { matrix.amount_index[72] }.from(0).to(4) }
+        it { expect { subject }.to_not change { matrix.amount_index[73] } }
+
+        context "total limit reached" do
+          let(:limit) { 10 }
+          it { is_expected.to be_falsey }
+          it { expect { subject }.to_not change { booking.places } }
+        end
       end
 
       context "not enough space for (4/3) at 72" do

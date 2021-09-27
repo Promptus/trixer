@@ -6,6 +6,10 @@ module Trixer
     
     # for example [64..88] => 16:00 - 22:00
     attr_reader :slots
+    attr_reader :limit
+
+    attr_reader :slot_limit
+    attr_reader :total
     
     # maximum capacity per slot
     attr_reader :total_slotcapacity
@@ -16,6 +20,8 @@ module Trixer
 
     attr_reader :free_capacity_index
 
+    attr_reader :amount_index
+
     # returns all bookings as internal structs for the given date
     attr_reader :booking_index
 
@@ -24,15 +30,19 @@ module Trixer
     attr_reader :place_index
     attr_reader :links
 
-    def initialize(slots:, places:, links:)
+    def initialize(slots:, places:, links:, limit: nil, slot_limit: nil)
       @slots = slots
+      @limit = limit
+      @slot_limit = slot_limit
       # fill missing links with empty array
       @links = places.inject(links || {}) { |h,place| h[place.id] ? h : h.merge(place.id => []) }
       @total_slotcapacity ||= places.sum(&:capacity)
       @place_index = places.inject({}) { |h, place| h.merge(place.id => place) }
       @occupied_places_index = slots.inject({}) { |h, slot| h.merge(slot => Set.new) }
+      @amount_index = slots.inject({}) { |h, slot| h.merge(slot => 0) }
       @free_capacity_index = slots.inject({}) { |h, slot| h.merge(slot => @total_slotcapacity) }
       @booking_index = {}
+      @total = 0
     end
 
     # this index holds all combinations for each capacity
@@ -62,7 +72,14 @@ module Trixer
     end
 
     def add_booking(booking:, place_restriction: nil)
+      # total limit reached
+      return if limit && (total + booking.amount > limit)
+
       slot = booking.slot
+
+      # slot limit reached
+      return if slot_limit && (@amount_index[slot] + booking.amount > slot_limit)
+
       booking_slots = (slot..slot+booking.duration-1).to_a
 
       # there is some slot that would be booked which is not available
@@ -94,12 +111,18 @@ module Trixer
             raise "free capacity is negative (#{@free_capacity_index[s]}) at slot #{s}" if @free_capacity_index[s] < 0
           end
           booking.places = comb
+          @amount_index[slot] += booking.amount
           @booking_index[booking.id] = booking
+          @total += booking.amount
           return true
         end
       end
       # booking does not fit into the given slot
       return false
     end
+  end
+
+  def open_slots(around_slot:, amount:, duration:, limit: 4)
+
   end
 end
