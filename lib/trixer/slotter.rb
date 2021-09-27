@@ -14,6 +14,9 @@ module Trixer
     # maximum capacity per slot
     attr_reader :total_slotcapacity
 
+    attr_reader :total_capacity
+    attr_reader :booked_capacity
+
     # occupied places per slot
     # slot => [t1, t3]
     attr_reader :occupied_places_index
@@ -37,12 +40,14 @@ module Trixer
       # fill missing links with empty array
       @links = places.inject(links || {}) { |h,place| h[place.id] ? h : h.merge(place.id => []) }
       @total_slotcapacity ||= places.sum(&:capacity)
+      @total_capacity = @total_slotcapacity * @slots.size
       @place_index = places.inject({}) { |h, place| h.merge(place.id => place) }
       @occupied_places_index = slots.inject({}) { |h, slot| h.merge(slot => Set.new) }
       @amount_index = slots.inject({}) { |h, slot| h.merge(slot => 0) }
       @free_capacity_index = slots.inject({}) { |h, slot| h.merge(slot => @total_slotcapacity) }
       @booking_index = {}
       @total = 0
+      @booked_capacity = 0
     end
 
     # this index holds all combinations for each capacity
@@ -116,6 +121,7 @@ module Trixer
           booking.places = comb
           @amount_index[slot] += booking.amount
           @booking_index[booking.id] = booking
+          @booked_capacity += booking.duration * booking.amount
           @total += booking.amount
           return true
         end
@@ -135,5 +141,9 @@ module Trixer
       break if found_slots.size >= limit
     end
     found_slots.sort
+  end
+
+  def booked_ratio
+    booked_capacity/total_capacity.to_f
   end
 end

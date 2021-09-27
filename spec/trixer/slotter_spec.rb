@@ -124,6 +124,11 @@ RSpec.describe Slotter do
       end
     end
 
+    describe 'booked_ratio' do
+      subject { matrix.booked_ratio }
+      it { is_expected.to eql(0.4) }
+    end
+
     describe 'add_booking' do
       let(:place_restriction) { nil }
       subject { matrix.add_booking(booking: booking, place_restriction: place_restriction) }
@@ -136,6 +141,7 @@ RSpec.describe Slotter do
         it { expect { subject }.to change { matrix.occupied_places_index[66] }.from(Set.new([3,1])).to(Set.new([3,1,2])) }
         it { expect { subject }.to change { matrix.amount_index[66] }.from(4).to(6) }
         it { expect { subject }.to_not change { matrix.amount_index[67] } }
+        it { expect { subject }.to change { matrix.booked_ratio }.from(0.4).to(0.5) }
 
         context "slot limit reached" do
           let(:slot_limit) { 4 }
@@ -150,6 +156,7 @@ RSpec.describe Slotter do
         it { expect { subject }.to change { booking.places }.from(nil).to(Set.new([2])) }
         it { expect { subject }.to change { matrix.free_capacity_index[66] }.from(2).to(0) }
         it { expect { subject }.to change { matrix.occupied_places_index[66] }.from(Set.new([3,1])).to(Set.new([3,1,2])) }
+        it { expect { subject }.to change { matrix.booked_ratio }.from(0.4).to(0.45) }
       end
 
       context "adds booking to place 2 with duration 6" do
@@ -158,6 +165,7 @@ RSpec.describe Slotter do
         it { expect { subject }.to change { booking.places }.from(nil).to(Set.new([2])) }
         it { expect { subject }.to change { matrix.free_capacity_index[66] }.from(2).to(0) }
         it { expect { subject }.to change { matrix.free_capacity_index[71] }.from(6).to(4) }
+        it { expect { subject }.to change { matrix.booked_ratio }.from(0.4).to(0.55) }
       end
 
       context "adds (4/2) at 64 to place 3" do
