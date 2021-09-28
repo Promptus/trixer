@@ -131,7 +131,8 @@ RSpec.describe Slotter do
 
     describe 'add_booking' do
       let(:place_restriction) { nil }
-      subject { matrix.add_booking(booking: booking, place_restriction: place_restriction) }
+      let(:check_limits) { true }
+      subject { matrix.add_booking(booking: booking, place_restriction: place_restriction, check_limits: check_limits) }
     
       context "adds booking to place 2" do
         let(:booking) { Slotter::Booking.new(id: 4, duration: 4, amount: 2, slot: 66) }
@@ -147,6 +148,11 @@ RSpec.describe Slotter do
           let(:slot_limit) { 4 }
           it { is_expected.to eql(:slot_limit_reached) }
           it { expect { subject }.to_not change { booking.places } }
+
+          context 'check_limits false' do
+            let(:check_limits) { false }
+            it { is_expected.to be_truthy }
+          end
         end
       end
       
@@ -195,6 +201,11 @@ RSpec.describe Slotter do
           let(:limit) { 10 }
           it { is_expected.to eql(:total_limit_reached) }
           it { expect { subject }.to_not change { booking.places } }
+
+          context 'check_limits false' do
+            let(:check_limits) { false }
+            it { is_expected.to be_truthy }
+          end
         end
       end
 

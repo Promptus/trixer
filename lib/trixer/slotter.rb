@@ -76,14 +76,14 @@ module Trixer
       occupied_places_index.values_at(*booking_slots).inject(Set.new) { |s,op| s | op }
     end
 
-    def add_booking(booking:, place_restriction: nil, dry_run: false)
+    def add_booking(booking:, place_restriction: nil, dry_run: false, check_limits: true)
       # total limit reached
-      return :total_limit_reached if limit && (total + booking.amount > limit)
+      return :total_limit_reached if check_limits && limit && (total + booking.amount > limit)
 
       slot = booking.slot
 
       # slot limit reached
-      return :slot_limit_reached if slot_limit && (@amount_index[slot] + booking.amount > slot_limit)
+      return :slot_limit_reached if check_limits && slot_limit && (@amount_index[slot] + booking.amount > slot_limit)
 
       booking_slots = (slot..slot+booking.duration-1).to_a
 
