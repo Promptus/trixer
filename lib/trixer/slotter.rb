@@ -129,21 +129,21 @@ module Trixer
       # booking does not fit into the given slot
       return :no_combination_found
     end
-  end
 
-  def open_slots(around_slot:, amount:, duration:, limit: 4)
-    found_slots = []
-    slots.sort { |x,y| (around_slot-x).abs <=> (around_slot-y).abs }.each do |slot|
-      booking = Slotter::Booking.new(slot: slot, amount: amount, duration: duration)
-      if add_booking(booking: booking, dry_run: true) == true
-        found_slots << slot
+    def open_slots(around_slot:, amount:, duration:, limit: 4)
+      found_slots = []
+      slots.sort { |x,y| (around_slot-x).abs <=> (around_slot-y).abs }.each do |slot|
+        booking = Slotter::Booking.new(slot: slot, amount: amount, duration: duration)
+        if add_booking(booking: booking, dry_run: true) == true
+          found_slots << slot
+        end
+        break if found_slots.size >= limit
       end
-      break if found_slots.size >= limit
+      found_slots.sort
     end
-    found_slots.sort
-  end
 
-  def booked_ratio
-    booked_capacity/total_capacity.to_f
+    def booked_ratio
+      booked_capacity/total_capacity.to_f
+    end
   end
 end
