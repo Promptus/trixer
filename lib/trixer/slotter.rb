@@ -60,7 +60,7 @@ module Trixer
         @capacity_index[place.capacity] ||= []
         @capacity_index[place.capacity] << Set.new([place.id])
       end
-      Trixer::Combinator.combinations(adjacency_list: links, objects: place_index.values.map(&:id)).each do |comb|
+      Trixer::Combinator.combinations(adjacency_list: links, objects: place_index.values.map(&:id).sort).each do |comb|
         comb_capacity = comb.inject(0) { |sum, place_id| sum += place_index[place_id].capacity }
         @capacity_index[comb_capacity] ||= []
         @capacity_index[comb_capacity] << Set.new(comb)
