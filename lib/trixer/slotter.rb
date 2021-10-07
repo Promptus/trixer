@@ -2,7 +2,7 @@ module Trixer
   class Slotter
 
     Booking = Struct.new(:id, :slot, :duration, :amount, :places, keyword_init: true)
-    Place = Struct.new(:id, :capacity, keyword_init: true)
+    Place = Struct.new(:id, :capacity, :bookings, keyword_init: true)
     
     # for example [64..88] => 16:00 - 22:00
     attr_reader :slots
@@ -119,6 +119,10 @@ module Trixer
             raise "free capacity is negative (#{@free_capacity_index[s]}) at slot #{s}" if @free_capacity_index[s] < 0
           end
           booking.places = comb
+          comb.each do |place|
+            @place_index[place].bookings ||= []
+            @place_index[place].bookings << booking
+          end
           @amount_index[slot] += booking.amount
           @booking_index[booking.id] = booking
           @booked_capacity += booking.duration * booking.amount
@@ -139,7 +143,7 @@ module Trixer
         end
         break if found_slots.size >= limit
       end
-      found_slots.sort
+      found_slots
     end
 
     def booked_ratio
