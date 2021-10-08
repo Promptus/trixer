@@ -121,6 +121,7 @@ RSpec.describe Trixer::Combinator do
   end
 
   describe '::combinations' do
+    let(:objects) { nil }
     let(:adjacency_list) do
       {
         '201' => ['202'],
@@ -147,7 +148,7 @@ RSpec.describe Trixer::Combinator do
         '222' => ['221'],
       }
     end
-    subject { Trixer::Combinator.combinations(adjacency_list: adjacency_list) }
+    subject { Trixer::Combinator.combinations(adjacency_list: adjacency_list, objects: objects) }
 
     it { expect(subject.size).to eql(36) }
 
@@ -212,6 +213,17 @@ RSpec.describe Trixer::Combinator do
           ['1', '3', '2']
         ]
       end
+
+      context 'unsorted objects' do
+        let(:objects) { %w(2 1 3) }
+        it do
+          is_expected.to eq [
+            ['2', '3'],
+            ['1', '3'],
+            ['2', '3', '1']
+          ]
+        end
+      end
     end
 
     context "example 2" do
@@ -248,6 +260,31 @@ RSpec.describe Trixer::Combinator do
       end
 
       it { expect(subject.size).to eql(476) }
+    end
+
+    context "example 4" do
+      let(:adjacency_list) do
+        {
+          '1' => ['3'],
+          '2' => [],
+          '3' => []
+        }
+      end
+
+      it do
+        is_expected.to eq [
+          ['1', '3']
+        ]
+      end
+
+      context 'unsorted objects' do
+        let(:objects) { %w(3 2 1) }
+        it do
+          is_expected.to eq [
+            ['3', '1']
+          ]
+        end
+      end
     end
 
     describe 'cross' do
