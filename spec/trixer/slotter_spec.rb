@@ -253,13 +253,14 @@ RSpec.describe Slotter do
       let(:amount) { 2 }
       let(:around_slot) { 70 }
       let(:duration) { 4 }
+      let(:check_limits) { true }
 
-      subject { matrix.open_slots(around_slot: around_slot, amount: amount, duration: duration, limit: 4) }
+      subject { matrix.open_slots(around_slot: around_slot, amount: amount, duration: duration, limit: 4, check_limits: check_limits) }
 
       it { is_expected.to eql([70, 69, 68, 67]) }
 
       context do
-        before { matrix.add_booking(booking: Slotter::Booking.new(id: 4, duration: 4, amount: 2, slot: 68)) }
+        before { puts matrix.add_booking(booking: Slotter::Booking.new(id: 4, duration: 4, amount: 2, slot: 68)) }
         it { is_expected.to eql([70, 64]) }
       end
 
@@ -293,6 +294,17 @@ RSpec.describe Slotter do
         let(:duration) { 6 }
         before { matrix.add_booking(booking: Slotter::Booking.new(id: 4, duration: 8, amount: 2, slot: 66)) }
         it { is_expected.to eql([]) }
+      end
+
+      context do
+        let(:around_slot) { 66 }
+        let(:slot_limit) { 4 }
+        it { is_expected.to eql([65, 67, 64, 68]) }
+
+        context do
+          let(:check_limits) { false }
+          it { is_expected.to eql([66, 65, 67, 64]) }
+        end
       end
     end
   end
