@@ -93,7 +93,9 @@ module Trixer
       return :slot_unavailable if (slots & booking_slots).size != booking.duration
 
       # not enough free slots for this booking
-      return :out_of_capacity if free_capacity_index[slot] < booking.amount
+      booking_slots.each do |bslot|
+        return :out_of_capacity if free_capacity_index[bslot] < booking.amount
+      end
 
       occupied_places = occupied_places_for(booking_slots: booking_slots)
       capacity_index.each do |capacity, combinations|

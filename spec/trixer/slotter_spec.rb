@@ -189,7 +189,7 @@ RSpec.describe Slotter do
 
       context "not enough space for (4/3) at 64" do
         let(:booking) { Slotter::Booking.new(id: 4, duration: 3, amount: 4, slot: 64) }
-        it { is_expected.to eql(:no_combination_found) }
+        it { is_expected.to eql(:out_of_capacity) }
         it { expect { subject }.to_not change { booking.places } }
       end
 
