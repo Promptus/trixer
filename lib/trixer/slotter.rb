@@ -1,0 +1,155 @@
+module Trixer
+  class Slotter
+
+    Booking = Struct.new(:id, :slot, :duration, :amount, :places, keyword_init: true)
+    Place = Struct.new(:id, :capacity, :bookings, keyword_init: true)
+    
+    # for example [64..88] => 16:00 - 22:00
+    attr_reader :slots
+    attr_reader :limit
+
+    attr_reader :slot_limit
+    attr_reader :total
+    
+    # maximum capacity per slot
+    attr_reader :total_slotcapacity
+
+    attr_reader :total_capacity
+    attr_reader :booked_capacity
+
+    # occupied places per slot
+    # slot => [t1, t3]
+    attr_reader :occupied_places_index
+
+    attr_reader :free_capacity_index
+
+    attr_reader :amount_index
+
+    # returns all bookings as internal structs for the given date
+    attr_reader :booking_index
+
+    # returns all open places as internal structs for the given date
+    # they should be sorted by capacity and number
+    attr_reader :place_index
+    attr_reader :links
+
+    def initialize(slots:, places:, links:, limit: nil, slot_limit: nil)
+      @slots = slots
+      @limit = limit
+      @slot_limit = slot_limit
+      # fill missing links with empty array
+      @links = places.inject(links || {}) { |h,place| h[place.id] ? h : h.merge(place.id => []) }
+      @total_slotcapacity ||= places.sum(&:capacity)
+      @total_capacity = @total_slotcapacity * @slots.size
+      @place_index = places.inject({}) { |h, place| h.merge(place.id => place) }
+      @occupied_places_index = slots.inject({}) { |h, slot| h.merge(slot => Set.new) }
+      @amount_index = slots.inject({}) { |h, slot| h.merge(slot => 0) }
+      @free_capacity_index = slots.inject({}) { |h, slot| h.merge(slot => @total_slotcapacity) }
+      @booking_index = {}
+      @total = 0
+      @booked_capacity = 0
+    end
+
+    # this index holds all combinations for each capacity
+    # hash: capacity => [[t1], [t2], [t1, t2]]
+    def capacity_index
+      return @capacity_index if @capacity_index
+
+      @capacity_index = {}
+      place_index.values.each do |place|
+        @capacity_index[place.capacity] ||= []
+        @capacity_index[place.capacity] << Set.new([place.id])
+      end
+      Trixer::Combinator.combinations(adjacency_list: links, objects: place_index.values.map(&:id)).each do |comb|
+        comb_capacity = comb.inject(0) { |sum, place_id| sum += place_index[place_id].capacity }
+        @capacity_index[comb_capacity] ||= []
+        @capacity_index[comb_capacity] << Set.new(comb)
+      end
+      # sort from smaller combinations to bigger combinations 
+      @capacity_index.each do |capacity, comb|
+        @capacity_index[capacity].sort! { |c1, c2| c1.size <=> c2.size }
+      end
+      @capacity_index
+    end
+
+    def occupied_places_for(booking_slots:)
+      occupied_places_index.values_at(*booking_slots).inject(Set.new) { |s,op| s | op }
+    end
+
+    def add_booking(booking:, place_restriction: nil, dry_run: false, check_limits: true)
+      # total limit reached
+      return :total_limit_reached if check_limits && limit && (total + booking.amount > limit)
+
+      slot = booking.slot
+
+      # slot limit reached
+      return :slot_limit_reached if check_limits && slot_limit && (@amount_index[slot] + booking.amount > slot_limit)
+
+      booking_slots = (slot..slot+booking.duration-1).to_a
+
+      # there is some slot that would be booked which is not available
+      # i.e. [1,2,3,5,6,7] & [3,4,5] = [3,5] => slot 4 is not available
+      # or   [1,2,3,4] & [3,4,5] = [3,4] => slot 5 is not available
+      return :slot_unavailable if (slots & booking_slots).size != booking.duration
+
+      # not enough free slots for this booking
+      booking_slots.each do |bslot|
+        return :out_of_capacity if free_capacity_index[bslot] < booking.amount
+      end
+
+      occupied_places = occupied_places_for(booking_slots: booking_slots)
+      capacity_index.each do |capacity, combinations|
+        next if capacity < booking.amount
+        combinations.each do |comb|
+          # skip place combination which contains an occupied place 
+          next if (comb & occupied_places).any?
+
+          # skip if combination does not include desired place
+          next if place_restriction && place_restriction.any? && (comb & place_restriction).empty?
+          
+          # don't add booking, just inform that it fits
+          return true if dry_run
+
+          # mark booking.duration-1 slots after the booked slot as occupied
+          # for example: duration 4 (1 hour)
+          # booking at 17:00:
+          # - three slots after are blocked (17:15, 17:30, 17:45) because a new booking
+          #   at that time would start while this booking is still active
+          booking_slots.each do |s|
+            @occupied_places_index[s] = @occupied_places_index[s] + comb
+            @free_capacity_index[s] = total_slotcapacity - occupied_places_index[s].sum { |id| place_index[id].capacity }
+            raise "free capacity is negative (#{@free_capacity_index[s]}) at slot #{s}" if @free_capacity_index[s] < 0
+          end
+          booking.places = comb
+          comb.each do |place|
+            @place_index[place].bookings ||= []
+            @place_index[place].bookings << booking
+          end
+          @amount_index[slot] += booking.amount
+          @booking_index[booking.id] = booking
+          @booked_capacity += booking.duration * booking.amount
+          @total += booking.amount
+          return true
+        end
+      end
+      # booking does not fit into the given slot
+      return :no_combination_found
+    end
+
+    def open_slots(around_slot:, amount:, duration:, limit: 4, check_limits: true)
+      found_slots = []
+      slots.sort { |x,y| (around_slot-x).abs <=> (around_slot-y).abs }.each do |slot|
+        booking = Slotter::Booking.new(slot: slot, amount: amount, duration: duration)
+        if add_booking(booking: booking, dry_run: true, check_limits: check_limits) == true
+          found_slots << slot
+        end
+        break if found_slots.size >= limit
+      end
+      found_slots
+    end
+
+    def booked_ratio
+      booked_capacity/total_capacity.to_f
+    end
+  end
+end

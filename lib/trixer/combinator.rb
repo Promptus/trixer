@@ -37,7 +37,6 @@ module Trixer
       @groups[2] = groups_of_two
       if @size > 2
         (3..matrix.size).each do |group_size|
-          cg = calculate_groups(group_size)
           break unless calculate_groups(group_size)
         end
       end

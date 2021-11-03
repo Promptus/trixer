@@ -9,6 +9,7 @@ module Trixer
           adjacency_list[obj].each do |linked_obj|
             j = objects.index(linked_obj)
             matrix[i][j] = 1 if j
+            matrix[j][i] = 1 if j
           end
         end
         matrix
