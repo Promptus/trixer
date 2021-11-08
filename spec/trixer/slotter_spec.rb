@@ -11,7 +11,7 @@ RSpec.describe Slotter do
   let(:place1) { Slotter::Place.new(id: 1, capacity: 2) }
   let(:place2) { Slotter::Place.new(id: 2, capacity: 2) }
   let(:place3) { Slotter::Place.new(id: 3, capacity: 4) }
-  let(:places) { [place1, place2, place3] }
+  let(:places) { [place3, place1, place2] }
 
   let(:links) { { 1 => [2], 2 => [3] } }
 
@@ -43,10 +43,10 @@ RSpec.describe Slotter do
       context do
         let(:places) do
           [
-            Slotter::Place.new(id: 1, capacity: 2),
-            Slotter::Place.new(id: 2, capacity: 2),
-            Slotter::Place.new(id: 3, capacity: 4),
             Slotter::Place.new(id: 4, capacity: 6),
+            Slotter::Place.new(id: 1, capacity: 2),
+            Slotter::Place.new(id: 3, capacity: 4),
+            Slotter::Place.new(id: 2, capacity: 2),
             Slotter::Place.new(id: 5, capacity: 8),
           ]
         end
@@ -76,6 +76,10 @@ RSpec.describe Slotter do
           6 => [Set.new([2, 3])],
           8 => [Set.new([1, 2, 3])]
         )
+      end
+
+      it do
+        expect(subject.keys).to eql([2, 4, 6, 8])
       end
 
     end

@@ -41,7 +41,7 @@ module Trixer
       @links = places.inject(links || {}) { |h,place| h[place.id] ? h : h.merge(place.id => []) }
       @total_slotcapacity ||= places.sum(&:capacity)
       @total_capacity = @total_slotcapacity * @slots.size
-      @place_index = places.inject({}) { |h, place| h.merge(place.id => place) }
+      @place_index = places.sort {|x,y| x.capacity <=> y.capacity }.inject({}) { |h, place| h.merge(place.id => place) }
       @occupied_places_index = slots.inject({}) { |h, slot| h.merge(slot => Set.new) }
       @amount_index = slots.inject({}) { |h, slot| h.merge(slot => 0) }
       @free_capacity_index = slots.inject({}) { |h, slot| h.merge(slot => @total_slotcapacity) }
