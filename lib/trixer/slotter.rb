@@ -143,7 +143,7 @@ module Trixer
         if add_booking(booking: booking, dry_run: true, check_limits: check_limits) == true
           found_slots << slot
         end
-        break if found_slots.size >= limit
+        break if limit && found_slots.size >= limit
       end
       found_slots
     end
