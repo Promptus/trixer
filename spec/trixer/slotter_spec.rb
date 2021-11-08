@@ -315,6 +315,13 @@ RSpec.describe Slotter do
           it { is_expected.to eql([66, 65, 67, 64]) }
         end
       end
+
+      context do
+        let(:places) { [] }
+        let(:links) { {} }
+
+        it { is_expected.to eql([]) }
+      end
     end
   end
 

@@ -137,7 +137,7 @@ module Trixer
     end
 
     def open_slots(around_slot:, amount:, duration:, limit: 4, check_limits: true)
-      return [] if amount > capacity_index.keys.last
+      return [] if amount > capacity_index.keys.last.to_i
 
       found_slots = []
       slots.sort { |x,y| (around_slot-x).abs <=> (around_slot-y).abs }.each do |slot|
