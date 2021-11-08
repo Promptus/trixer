@@ -284,6 +284,11 @@ RSpec.describe Slotter do
       end
 
       context do
+        let(:amount) { 10 }
+        it { is_expected.to eql([]) }
+      end
+
+      context do
         let(:duration) { 7 }
         it { is_expected.to eql([67, 66, 65, 64]) }
       end

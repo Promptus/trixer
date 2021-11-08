@@ -137,6 +137,8 @@ module Trixer
     end
 
     def open_slots(around_slot:, amount:, duration:, limit: 4, check_limits: true)
+      return [] if amount > capacity_index.keys.last
+
       found_slots = []
       slots.sort { |x,y| (around_slot-x).abs <=> (around_slot-y).abs }.each do |slot|
         booking = Slotter::Booking.new(slot: slot, amount: amount, duration: duration)
