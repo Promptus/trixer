@@ -136,13 +136,13 @@ module Trixer
       return :no_combination_found
     end
 
-    def open_slots(around_slot:, amount:, duration:, limit: 4, check_limits: true)
+    def open_slots(around_slot:, amount:, duration:, limit: 4, check_limits: true, place_restriction: nil)
       return [] if amount > capacity_index.keys.last.to_i
 
       found_slots = []
       slots.sort { |x,y| (around_slot-x).abs <=> (around_slot-y).abs }.each do |slot|
         booking = Slotter::Booking.new(slot: slot, amount: amount, duration: duration)
-        if add_booking(booking: booking, dry_run: true, check_limits: check_limits) == true
+        if add_booking(booking: booking, dry_run: true, check_limits: check_limits, place_restriction: place_restriction) == true
           found_slots << slot
         end
         break if limit && found_slots.size >= limit
