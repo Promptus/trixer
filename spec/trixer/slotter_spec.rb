@@ -135,7 +135,23 @@ RSpec.describe Slotter do
 
     describe 'occupied_places_for' do
       
+    end
 
+    describe 'place_slot_data' do
+      let(:slots) { (60..62).to_a + (64..73).to_a } # 16:00 - 18:15
+      let(:place_id) { 1 }
+
+      subject { matrix.place_slot_data(place_id: place_id) }
+
+      it { expect(subject.sort.map { |_, data| data[:free_duration] }).to eql([3,2,1,0,0,0,0,0,0,0,0,2,1]) }
+      it { expect(subject[60]).to eql(capacity: 2, free_duration: 3) }
+      it { expect(subject[64]).to eql(capacity: 2, booking: 2, free_duration: 0) }
+      it { expect(subject[65]).to eql(capacity: 2, free_duration: 0) }
+
+      context do
+        let(:place_id) { 3 }
+        it { expect(subject.sort.map { |_, data| data[:free_duration] }).to eql([3,2,1,2,1,0,0,0,0,4,3,2,1]) }
+      end
     end
 
     describe 'add_booking' do
