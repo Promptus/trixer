@@ -142,19 +142,46 @@ RSpec.describe Slotter do
 
       subject { matrix.place_slot_data(place_id: place_id) }
 
-      it { expect(subject.sort.map { |_, data| data[:free_duration] }).to eql([3,2,1,0,0,0,0,0,0,0,0,2,1]) }
-      it { expect(subject[60]).to eql(capacity: 2, free_duration: 3) }
-      it { expect(subject[64]).to eql(capacity: 2, booking: 2, free_duration: 0) }
-      it { expect(subject[65]).to eql(capacity: 2, free_duration: 0) }
+      it { expect(subject.sort.map { |_, data| data[:free_duration][:rest] }).to eql([3,2,1,0,0,0,0,0,0,0,0,2,1]) }
+      it { expect(subject[60]).to eql(capacity: 2, free_duration: { rest: 3 }) }
+      it { expect(subject[64]).to eql(capacity: 2, booking: 2, free_duration: { rest: 0, 2 => 4 }) }
+      it { expect(subject[65]).to eql(capacity: 2, booking: 2, free_duration: { rest: 0, 2 => 3 }) }
+      it { expect(subject[67]).to eql(capacity: 2, booking: 2, free_duration: { rest: 0, 2 => 1 }) }
+      it { expect(subject[70]).to eql(capacity: 2, booking: 3, free_duration: { rest: 0, 3 => 4 }) }
+      it { expect(subject[71]).to eql(capacity: 2, booking: 3, free_duration: { rest: 0, 3 => 3 }) }
 
       context do
         let(:place_id) { 2 }
-        it { expect(subject.sort.map { |_, data| data[:free_duration] }).to eql([3,2,1,10,9,8,7,6,5,4,3,2,1]) }
+        it { expect(subject.sort.map { |_, data| data[:free_duration][:rest] }).to eql([3,2,1,10,9,8,7,6,5,4,3,2,1]) }
       end
 
       context do
         let(:place_id) { 3 }
-        it { expect(subject.sort.map { |_, data| data[:free_duration] }).to eql([3,2,1,2,1,0,0,0,0,4,3,2,1]) }
+        it { expect(subject.sort.map { |_, data| data[:free_duration][:rest] }).to eql([3,2,1,2,1,0,0,0,0,4,3,2,1]) }
+      end
+
+      context do
+        #     16:00       17:00       18:00
+        #     60 61 62  64 65 66 67 68 69 70 71 72 73  74 75 76 77
+        # 1/2  +  +  +  +  +  +  +  +  +  +  +  +  +  +  +  +  +
+        # 2/2  +  +  +  1  1  1  1  +  +  2  2  2  2  +  3  3  3
+        # 3/4  +  +  +  +  +  +  +  +  +  +  +  +  +  +  +  +  +
+        let(:slots) { (60..62).to_a + (64..77).to_a } # 16:00 - 18:15
+        let(:booking1) { Slotter::Booking.new(id: 1, duration: 4, amount: 2, slot: 64) } # 17:00 - 18:00
+        let(:booking2) { Slotter::Booking.new(id: 2, duration: 4, amount: 2, slot: 70) } # 17:00 - 18:00
+        let(:booking3) { Slotter::Booking.new(id: 3, duration: 3, amount: 2, slot: 75) } # 17:00 - 18:00
+        let(:bookings) { [booking1, booking2, booking3] }
+
+        it { expect(subject[64]).to eql(capacity: 2, booking: 1, free_duration: { rest: 0, 1 => 6 }) }
+        it { expect(subject[65]).to eql(capacity: 2, booking: 1, free_duration: { rest: 0, 1 => 5 }) }
+        it { expect(subject[66]).to eql(capacity: 2, booking: 1, free_duration: { rest: 0, 1 => 4 }) }
+        it { expect(subject[67]).to eql(capacity: 2, booking: 1, free_duration: { rest: 0, 1 => 3 }) }
+        it { expect(subject[69]).to eql(capacity: 2, free_duration: { rest: 1 }) }
+        it { expect(subject[70]).to eql(capacity: 2, booking: 2, free_duration: { rest: 0, 2 => 5 }) }
+        it { expect(subject[71]).to eql(capacity: 2, booking: 2, free_duration: { rest: 0, 2 => 4 }) }
+        it { expect(subject[73]).to eql(capacity: 2, booking: 2, free_duration: { rest: 0, 2 => 2 }) }
+        it { expect(subject[75]).to eql(capacity: 2, booking: 3, free_duration: { rest: 0, 3 => 3 }) }
+        it { expect(subject[77]).to eql(capacity: 2, booking: 3, free_duration: { rest: 0, 3 => 1 }) }
       end
     end
 

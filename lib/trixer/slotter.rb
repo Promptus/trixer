@@ -80,6 +80,11 @@ module Trixer
       occupied_places_index.values_at(*booking_slots).inject(Set.new) { |s,op| s | op }
     end
 
+    def booking_slots(booking:)
+      slot = booking.slot
+      (slot..slot+booking.duration-1).to_a
+    end
+
     def add_booking(booking:, place_restriction: nil, dry_run: false, check_limits: true)
       # total limit reached
       return :total_limit_reached if check_limits && limit && (total + booking.amount > limit)
@@ -89,7 +94,7 @@ module Trixer
       # slot limit reached
       return :slot_limit_reached if check_limits && slot_limit && (@amount_index[slot] + booking.amount > slot_limit)
 
-      booking_slots = (slot..slot+booking.duration-1).to_a
+      booking_slots = booking_slots(booking: booking)
 
       # there is some slot that would be booked which is not available
       # i.e. [1,2,3,5,6,7] & [3,4,5] = [3,5] => slot 4 is not available
@@ -129,7 +134,7 @@ module Trixer
             @place_index[place_id].bookings ||= []
             @place_index[place_id].bookings << booking
             booking_slots.each do |s|
-              @booked_slots_index[place_id][s] = true
+              @booked_slots_index[place_id][s] = booking
             end
           end
           @amount_index[slot] += booking.amount
@@ -171,22 +176,30 @@ module Trixer
     def place_slot_data(place_id:)
       data = {}
       current_length = 1
+      current_booking_length = 1
+      current_booking = nil
       place = @place_index[place_id]
       base_data = { capacity: place.capacity }
       slots.reverse.each_with_index do |slot, idx|
         slot_data = base_data.dup
-        booking = place.bookings&.find { |b| b.slot == slot }
+        booking = @booked_slots_index[place_id][slot]
         slot_data[:booking] = booking.id if booking
-        if @booked_slots_index[place_id][slot] == true
+        if booking && current_booking != booking
+          current_booking_length = current_length
+          current_booking = booking
+        end
+        if booking
+          current_booking_length += 1
           current_length = 1
-          slot_data[:free_duration] = 0
+          slot_data[:free_duration] = { rest: 0, booking.id => current_booking_length - 1 }
         elsif @gap_slots[slot] == true
           leng = current_length
           current_length = 1
-          slot_data[:free_duration] = leng
+          current_booking_length = 1
+          slot_data[:free_duration] = { rest: leng }
         else
           current_length += 1
-          slot_data[:free_duration] = current_length - 1
+          slot_data[:free_duration] = { rest: current_length - 1 }
         end
         data[slot] = slot_data
       end
