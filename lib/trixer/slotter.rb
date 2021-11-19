@@ -3,14 +3,14 @@ module Trixer
 
     Booking = Struct.new(:id, :slot, :duration, :amount, :places, keyword_init: true)
     Place = Struct.new(:id, :capacity, :bookings, keyword_init: true)
-    
+
     # for example [64..88] => 16:00 - 22:00
     attr_reader :slots
     attr_reader :limit
 
     attr_reader :slot_limit
     attr_reader :total
-    
+
     # maximum capacity per slot
     attr_reader :total_slotcapacity
 
@@ -69,7 +69,7 @@ module Trixer
         @capacity_index[comb_capacity] ||= []
         @capacity_index[comb_capacity] << Set.new(comb)
       end
-      # sort from smaller combinations to bigger combinations 
+      # sort from smaller combinations to bigger combinations
       @capacity_index.each do |capacity, comb|
         @capacity_index[capacity].sort! { |c1, c2| c1.size <=> c2.size }
       end
@@ -105,12 +105,12 @@ module Trixer
       capacity_index.each do |capacity, combinations|
         next if capacity < booking.amount
         combinations.each do |comb|
-          # skip place combination which contains an occupied place 
+          # skip place combination which contains an occupied place
           next if (comb & occupied_places).any?
 
           # skip if combination does not include desired place
           next if place_restriction && place_restriction.any? && (comb & place_restriction).empty?
-          
+
           # don't add booking, just inform that it fits
           return true if dry_run
 
@@ -164,7 +164,7 @@ module Trixer
     def slot_distances
       @slot_distances = {}
       @place_index.each do |place_id, place|
-        @slot_distances[place_id] = slots.reverse.each_with_index 
+        @slot_distances[place_id] = slots.reverse.each_with_index
       end
     end
 
@@ -175,7 +175,7 @@ module Trixer
       base_data = { capacity: place.capacity }
       slots.reverse.each_with_index do |slot, idx|
         slot_data = base_data.dup
-        booking = place.bookings.find { |b| b.slot == slot }
+        booking = place.bookings&.find { |b| b.slot == slot }
         slot_data[:booking] = booking.id if booking
         if @booked_slots_index[place_id][slot] == true
           current_length = 1

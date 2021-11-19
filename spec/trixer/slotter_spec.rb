@@ -1,4 +1,4 @@
-# encoding: utf-8
+# frozen_string_literal: true
 
 include Trixer
 
@@ -7,7 +7,7 @@ RSpec.describe Slotter do
   let(:limit) { nil }
   let(:slot_limit) { nil }
   let(:matrix) { Slotter.new(slots: slots, places: places, links: links, limit: limit, slot_limit: slot_limit) }
-  
+
   let(:place1) { Slotter::Place.new(id: 1, capacity: 2) }
   let(:place2) { Slotter::Place.new(id: 2, capacity: 2) }
   let(:place3) { Slotter::Place.new(id: 3, capacity: 4) }
@@ -33,7 +33,6 @@ RSpec.describe Slotter do
     # 1/2  2  2  2  2  3  3  3  3  +  +
     # 2/2  +  +  +  +  +  +  +  +  +  +
     # 3/4  +  +  1  1  1  1  +  +  +  +
-
 
     describe 'total_slotcapacity' do
       subject { matrix.total_slotcapacity }
@@ -134,7 +133,7 @@ RSpec.describe Slotter do
     end
 
     describe 'occupied_places_for' do
-      
+      pending
     end
 
     describe 'place_slot_data' do
@@ -149,6 +148,11 @@ RSpec.describe Slotter do
       it { expect(subject[65]).to eql(capacity: 2, free_duration: 0) }
 
       context do
+        let(:place_id) { 2 }
+        it { expect(subject.sort.map { |_, data| data[:free_duration] }).to eql([3,2,1,10,9,8,7,6,5,4,3,2,1]) }
+      end
+
+      context do
         let(:place_id) { 3 }
         it { expect(subject.sort.map { |_, data| data[:free_duration] }).to eql([3,2,1,2,1,0,0,0,0,4,3,2,1]) }
       end
@@ -158,7 +162,7 @@ RSpec.describe Slotter do
       let(:place_restriction) { nil }
       let(:check_limits) { true }
       subject { matrix.add_booking(booking: booking, place_restriction: place_restriction, check_limits: check_limits) }
-    
+
       context "adds booking to place 2" do
         let(:booking) { Slotter::Booking.new(id: 4, duration: 4, amount: 2, slot: 66) }
         it { is_expected.to be_truthy }
@@ -180,7 +184,7 @@ RSpec.describe Slotter do
           end
         end
       end
-      
+
       context "adds booking to place 2 with capacity 1" do
         let(:booking) { Slotter::Booking.new(id: 4, duration: 4, amount: 1, slot: 66) }
         it { is_expected.to be_truthy }
@@ -239,7 +243,7 @@ RSpec.describe Slotter do
         it { is_expected.to eql(:slot_unavailable) }
         it { expect { subject }.to_not change { booking.places } }
       end
-  
+
       context "not enough free capacity" do
         let(:booking) { Slotter::Booking.new(id: 4, duration: 4, amount: 3, slot: 66) }
         it { is_expected.to eql(:out_of_capacity) }
@@ -247,7 +251,7 @@ RSpec.describe Slotter do
         it { expect { subject }.to_not change { matrix.free_capacity_index[66] } }
         it { expect { subject }.to_not change { matrix.occupied_places_index[66] } }
       end
-  
+
       context "too close to closing time" do
         let(:booking) { Slotter::Booking.new(id: 4, duration: 4, amount: 2, slot: 71) }
         it { is_expected.to eql(:slot_unavailable) }
@@ -387,13 +391,13 @@ end
 # big matrix
 RSpec.describe Slotter do
   let(:slots) { (56..80).to_a } # 14:00 - 20:00
-  
+
   let(:places) do
     (1..100).map do |id|
       Slotter::Place.new(id: id, capacity: (id/33)*2+2)
     end
   end
-  
+
   let(:links) do
     links = {}
     (1..50).each do |id|
@@ -401,7 +405,7 @@ RSpec.describe Slotter do
     end
     links
   end
-  
+
   let(:matrix) { Slotter.new(slots: slots, places: places, links: links) }
 
   describe 'total_slotcapacity' do
@@ -425,7 +429,7 @@ RSpec.describe Slotter do
   end
 
   context 'performance test' do
-    
+
     it do
       puts "#{places.size} places"
       puts "#{links.size} links"
