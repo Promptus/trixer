@@ -86,6 +86,13 @@ module Trixer
     end
 
     def add_booking(booking:, place_restriction: nil, dry_run: false, check_limits: true)
+      booking_slots = booking_slots(booking: booking)
+
+      # there is some slot that would be booked which is not available
+      # i.e. [1,2,3,5,6,7] & [3,4,5] = [3,5] => slot 4 is not available
+      # or   [1,2,3,4] & [3,4,5] = [3,4] => slot 5 is not available
+      return :slot_unavailable if (slots & booking_slots).size != booking.duration
+
       # total limit reached
       return :total_limit_reached if check_limits && limit && (total + booking.amount > limit)
 
@@ -93,13 +100,6 @@ module Trixer
 
       # slot limit reached
       return :slot_limit_reached if check_limits && slot_limit && (@amount_index[slot] + booking.amount > slot_limit)
-
-      booking_slots = booking_slots(booking: booking)
-
-      # there is some slot that would be booked which is not available
-      # i.e. [1,2,3,5,6,7] & [3,4,5] = [3,5] => slot 4 is not available
-      # or   [1,2,3,4] & [3,4,5] = [3,4] => slot 5 is not available
-      return :slot_unavailable if (slots & booking_slots).size != booking.duration
 
       # not enough free slots for this booking
       booking_slots.each do |bslot|
