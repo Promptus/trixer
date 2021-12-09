@@ -180,25 +180,28 @@ RSpec.describe Slotter do
         it { expect(subject[65]).to eql(capacity: 2, booking: 1, free_duration: { rest: 0, 1 => 5 }) }
         it { expect(subject[66]).to eql(capacity: 2, booking: 1, free_duration: { rest: 0, 1 => 4 }) }
         it { expect(subject[67]).to eql(capacity: 2, booking: 1, free_duration: { rest: 0, 1 => 3 }) }
-        it { expect(subject[68]).to eql(capacity: 2, free_duration: { rest: 2, 2 => 5 }) }
-        it { expect(subject[69]).to eql(capacity: 2, free_duration: { rest: 1, 2 => 5 }) }
+        it { expect(subject[68]).to eql(capacity: 2, free_duration: { rest: 2, 2 => 7 }) }
+        it { expect(subject[69]).to eql(capacity: 2, free_duration: { rest: 1, 2 => 6 }) }
         it { expect(subject[70]).to eql(capacity: 2, booking: 2, free_duration: { rest: 0, 2 => 5 }) }
         it { expect(subject[71]).to eql(capacity: 2, booking: 2, free_duration: { rest: 0, 2 => 4 }) }
         it { expect(subject[73]).to eql(capacity: 2, booking: 2, free_duration: { rest: 0, 2 => 2 }) }
-        it { expect(subject[74]).to eql(capacity: 2, free_duration: { rest: 1, 3 => 3 }) }
+        it { expect(subject[74]).to eql(capacity: 2, free_duration: { rest: 1, 3 => 4 }) }
         it { expect(subject[75]).to eql(capacity: 2, booking: 3, free_duration: { rest: 0, 3 => 3 }) }
         it { expect(subject[76]).to eql(capacity: 2, booking: 3, free_duration: { rest: 0, 3 => 2 }) }
         it { expect(subject[77]).to eql(capacity: 2, booking: 3, free_duration: { rest: 0, 3 => 1 }) }
 
         context do
           let(:place_id) { 3 }
-          it { expect(subject[64]).to eql(capacity: 4, free_duration: { rest: 7 }) }
-          it { expect(subject[65]).to eql(capacity: 4, free_duration: { rest: 6, 4 => 7 }) }
-          it { expect(subject[66]).to eql(capacity: 4, free_duration: { rest: 5, 4 => 7 }) }
-          it { expect(subject[67]).to eql(capacity: 4, free_duration: { rest: 4, 4 => 7 }) }
-          it { expect(subject[68]).to eql(capacity: 4, free_duration: { rest: 3, 4 => 7 }) }
-          it { expect(subject[69]).to eql(capacity: 4, free_duration: { rest: 2, 4 => 7 }) }
-          it { expect(subject[70]).to eql(capacity: 4, free_duration: { rest: 1, 4 => 7 }) }
+          it { expect(subject[61]).to eql(capacity: 4, free_duration: { rest: 2 }) }
+          it { expect(subject[64]).to eql(capacity: 4, free_duration: { rest: 7, 4 => 14 }) }
+          it { expect(subject[65]).to eql(capacity: 4, free_duration: { rest: 6, 4 => 13 }) }
+          it { expect(subject[66]).to eql(capacity: 4, free_duration: { rest: 5, 4 => 12 }) }
+          it { expect(subject[67]).to eql(capacity: 4, free_duration: { rest: 4, 4 => 11 }) }
+          it { expect(subject[68]).to eql(capacity: 4, free_duration: { rest: 3, 4 => 10 }) }
+          it { expect(subject[69]).to eql(capacity: 4, free_duration: { rest: 2, 4 => 9 }) }
+          it { expect(subject[70]).to eql(capacity: 4, free_duration: { rest: 1, 4 => 8 }) }
+          it { expect(subject[71]).to eql(capacity: 4, booking: 4, free_duration: { rest: 0, 4 => 7 }) }
+          it { expect(subject[72]).to eql(capacity: 4, booking: 4, free_duration: { rest: 0, 4 => 6 }) }
           it { expect(subject[74]).to eql(capacity: 4, booking: 4, free_duration: { rest: 0, 4 => 4 }) }
         end
       end
