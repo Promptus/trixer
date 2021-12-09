@@ -163,6 +163,8 @@ module Trixer
     end
 
     def booked_ratio
+      return 0.0 if total_capacity.zero?
+
       booked_capacity/total_capacity.to_f
     end
 
