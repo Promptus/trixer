@@ -194,11 +194,21 @@ module Trixer
           current_booking_length += 1
           current_length = 1
           slot_data[:free_duration] = { rest: 0, booking.id => current_booking_length - 1 }
+          current_booking = nil if @gap_slots[slot] == true
         elsif @gap_slots[slot] == true
           leng = current_length
           current_length = 1
+          if current_booking
+            slot_data[:free_duration] = { rest: leng, current_booking.id => current_booking_length }
+          else
+            slot_data[:free_duration] = { rest: leng }
+          end
           current_booking_length = 1
-          slot_data[:free_duration] = { rest: leng }
+          current_booking = nil
+        elsif !booking && current_booking
+          current_length += 1
+          current_booking_length += 1
+          slot_data[:free_duration] = { rest: current_length - 1, current_booking.id => current_booking_length - 1 }
         else
           current_length += 1
           slot_data[:free_duration] = { rest: current_length - 1 }
