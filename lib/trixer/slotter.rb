@@ -6,6 +6,7 @@ module Trixer
 
     # for example [64..88] => 16:00 - 22:00
     attr_reader :slots
+    attr_reader :blocked_slots
     attr_reader :limit
 
     attr_reader :slot_limit
@@ -33,8 +34,9 @@ module Trixer
     attr_reader :place_index
     attr_reader :links
 
-    def initialize(slots:, places:, links:, limit: nil, slot_limit: nil)
+    def initialize(slots:, places:, links:, limit: nil, slot_limit: nil, blocked_slots: [])
       @slots = slots
+      @blocked_slots = Set.new(blocked_slots)
       @gap_slots = {}
       slots.each_with_index { |slot, idx| @gap_slots[slot] = true if slots[idx-1] != slot-1 }
 
@@ -43,15 +45,19 @@ module Trixer
       # fill missing links with empty array
       @links = places.inject(links || {}) { |h,place| h[place.id] ? h : h.merge(place.id => []) }
       @total_slotcapacity ||= places.sum(&:capacity)
-      @total_capacity = @total_slotcapacity * @slots.size
+      @total_capacity = @total_slotcapacity * (@slots.size - @blocked_slots.size)
       @place_index = places.sort {|x,y| x.capacity <=> y.capacity }.inject({}) { |h, place| h.merge(place.id => place) }
       @occupied_places_index = slots.inject({}) { |h, slot| h.merge(slot => Set.new) }
       @amount_index = slots.inject({}) { |h, slot| h.merge(slot => 0) }
-      @free_capacity_index = slots.inject({}) { |h, slot| h.merge(slot => @total_slotcapacity) }
+      @free_capacity_index = slots.inject({}) { |h, slot| h.merge(slot => total_slotcapacity) }
       @booked_slots_index = @place_index.keys.inject({}) { |h, place_id| h.merge(place_id => {}) }
       @booking_index = {}
       @total = 0
       @booked_capacity = 0
+    end
+
+    def slot_blocked?(slot)
+      @blocked_slots.include?(slot)
     end
 
     # this index holds all combinations for each capacity
@@ -92,6 +98,8 @@ module Trixer
       # i.e. [1,2,3,5,6,7] & [3,4,5] = [3,5] => slot 4 is not available
       # or   [1,2,3,4] & [3,4,5] = [3,4] => slot 5 is not available
       return :slot_unavailable if (slots & booking_slots).size != booking.duration
+
+      return :slot_blocked if slot_blocked?(booking.slot)
 
       # total limit reached
       return :total_limit_reached if check_limits && limit && (total + booking.amount > limit)
@@ -163,6 +171,7 @@ module Trixer
     end
 
     def booked_ratio
+      
       return 0.0 if total_capacity.zero?
 
       booked_capacity/total_capacity.to_f
@@ -184,6 +193,7 @@ module Trixer
       base_data = { capacity: place.capacity }
       slots.reverse.each_with_index do |slot, idx|
         slot_data = base_data.dup
+        slot_blocked = slot_blocked?(slot)
         booking = @booked_slots_index[place_id][slot]
         slot_data[:booking] = booking.id if booking
         if booking && current_booking != booking
@@ -193,29 +203,37 @@ module Trixer
         if booking
           current_booking_length += 1
           current_length = 1
-          slot_data[:free_duration] = { rest: 0, booking.id => current_booking_length - 1 }
+          slot_data[:free_duration] = place_slot_data_hash(slot_blocked: slot_blocked, duration: 0, booking: current_booking, booking_duration: current_booking_length - 1)
           current_booking = nil if @gap_slots[slot] == true
         elsif @gap_slots[slot] == true
           leng = current_length
           current_length = 1
           if current_booking
-            slot_data[:free_duration] = { rest: leng, current_booking.id => current_booking_length }
+            slot_data[:free_duration] = place_slot_data_hash(slot_blocked: slot_blocked, duration: leng, booking: current_booking, booking_duration: current_booking_length)
           else
-            slot_data[:free_duration] = { rest: leng }
+            slot_data[:free_duration] = place_slot_data_hash(slot_blocked: slot_blocked, duration: leng)
           end
           current_booking_length = 1
           current_booking = nil
         elsif !booking && current_booking
           current_length += 1
           current_booking_length += 1
-          slot_data[:free_duration] = { rest: current_length - 1, current_booking.id => current_booking_length - 1 }
+          slot_data[:free_duration] = place_slot_data_hash(slot_blocked: slot_blocked, duration: current_length - 1, booking: current_booking, booking_duration: current_booking_length - 1)
         else
           current_length += 1
-          slot_data[:free_duration] = { rest: current_length - 1 }
+          slot_data[:free_duration] = place_slot_data_hash(slot_blocked: slot_blocked, duration: current_length - 1)
         end
         data[slot] = slot_data
       end
       data
+    end
+
+    def place_slot_data_hash(slot_blocked:, duration:, booking: nil, booking_duration: nil)
+      if booking
+        { rest: (slot_blocked ? 0 : duration), booking.id => (slot_blocked ? 0 : booking_duration) }
+      else
+        { rest: (slot_blocked ? 0 : duration) }
+      end
     end
   end
 end

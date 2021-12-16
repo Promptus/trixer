@@ -6,7 +6,8 @@ RSpec.describe Slotter do
   let(:slots) { (64..73).to_a } # 16:00 - 18:15
   let(:limit) { nil }
   let(:slot_limit) { nil }
-  let(:matrix) { Slotter.new(slots: slots, places: places, links: links, limit: limit, slot_limit: slot_limit) }
+  let(:blocked_slots) { nil }
+  let(:matrix) { Slotter.new(slots: slots, places: places, links: links, limit: limit, slot_limit: slot_limit, blocked_slots: blocked_slots) }
 
   let(:place1) { Slotter::Place.new(id: 1, capacity: 2) }
   let(:place2) { Slotter::Place.new(id: 2, capacity: 2) }
@@ -133,7 +134,28 @@ RSpec.describe Slotter do
     end
 
     describe 'occupied_places_for' do
-      pending
+      let(:booking_slots) { [64, 65, 66, 67] }
+      subject { matrix.occupied_places_for(booking_slots: booking_slots).sort }
+
+      it { is_expected.to eql([1, 3]) }
+
+      context do
+        let(:booking_slots) { [68, 69, 70, 71] }
+
+        it { is_expected.to eql([1, 3]) }
+      end
+
+      context do
+        let(:booking_slots) { [70, 71, 72, 73] }
+
+        it { is_expected.to eql([1]) }
+      end
+
+      context do
+        let(:booking_slots) { [72, 73] }
+
+        it { is_expected.to eql([]) }
+      end
     end
 
     describe 'place_slot_data' do
@@ -204,6 +226,23 @@ RSpec.describe Slotter do
           it { expect(subject[72]).to eql(capacity: 4, booking: 4, free_duration: { rest: 0, 4 => 6 }) }
           it { expect(subject[74]).to eql(capacity: 4, booking: 4, free_duration: { rest: 0, 4 => 4 }) }
         end
+
+        context do
+          let(:place_id) { 3 }
+          let(:blocked_slots) { [66,67,68,72,73] }
+
+          it { expect(subject[64]).to eql(capacity: 4, free_duration: { rest: 7, 4 => 14 }) }
+          it { expect(subject[65]).to eql(capacity: 4, free_duration: { rest: 6, 4 => 13 }) }
+          it { expect(subject[66]).to eql(capacity: 4, free_duration: { rest: 0, 4 => 0 }) }
+          it { expect(subject[67]).to eql(capacity: 4, free_duration: { rest: 0, 4 => 0 }) }
+          it { expect(subject[68]).to eql(capacity: 4, free_duration: { rest: 0, 4 => 0 }) }
+          it { expect(subject[69]).to eql(capacity: 4, free_duration: { rest: 2, 4 => 9 }) }
+          it { expect(subject[70]).to eql(capacity: 4, free_duration: { rest: 1, 4 => 8 }) }
+          it { expect(subject[71]).to eql(capacity: 4, booking: 4, free_duration: { rest: 0, 4 => 7 }) }
+          it { expect(subject[72]).to eql(capacity: 4, booking: 4, free_duration: { rest: 0, 4 => 0 }) }
+          it { expect(subject[73]).to eql(capacity: 4, booking: 4, free_duration: { rest: 0, 4 => 0 }) }
+          it { expect(subject[74]).to eql(capacity: 4, booking: 4, free_duration: { rest: 0, 4 => 4 }) }
+        end
       end
     end
 
@@ -231,6 +270,16 @@ RSpec.describe Slotter do
             let(:check_limits) { false }
             it { is_expected.to be_truthy }
           end
+        end
+
+        context "slot blocked" do
+          let(:blocked_slots) { [66] }
+          it { is_expected.to eql(:slot_blocked) }
+        end
+
+        context "slot blocked" do
+          let(:blocked_slots) { [67] }
+          it { is_expected.to be_truthy }
         end
       end
 
@@ -350,6 +399,11 @@ RSpec.describe Slotter do
         context do
           let(:place_restriction) { [3] }
           it { is_expected.to eql([70]) }
+        end
+
+        context do
+          let(:blocked_slots) { [70] }
+          it { is_expected.to eql([64]) }
         end
       end
 
