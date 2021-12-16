@@ -369,6 +369,18 @@ RSpec.describe Slotter do
         it { expect { subject }.to change { matrix.free_capacity_index[72] }.from(4).to(0) }
         it { expect { subject }.to change { matrix.free_capacity_index[73] }.from(4).to(0) }
       end
+
+      context 'invalid slot' do
+        let(:booking_slot) { nil }
+        let(:booking) { Slotter::Booking.new(id: 5, duration: 2, amount: 4, slot: nil) }
+
+        it { is_expected.to eql(:slot_unavailable) }
+
+        context do
+          let(:booking_slot) { 'my united states of whatever' }
+          it { is_expected.to eql(:slot_unavailable) }
+        end
+      end
     end
 
     describe 'open_slots' do

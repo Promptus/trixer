@@ -88,6 +88,8 @@ module Trixer
 
     def booking_slots(booking:)
       slot = booking.slot
+      return [] if slot.nil? || !slot.is_a?(Integer)
+      
       (slot..slot+booking.duration-1).to_a
     end
 
