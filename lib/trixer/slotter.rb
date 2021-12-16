@@ -17,6 +17,7 @@ module Trixer
 
     attr_reader :total_capacity
     attr_reader :booked_capacity
+    attr_reader :max_capacity
 
     # occupied places per slot
     # slot => [t1, t3]
@@ -51,9 +52,11 @@ module Trixer
       @amount_index = slots.inject({}) { |h, slot| h.merge(slot => 0) }
       @free_capacity_index = slots.inject({}) { |h, slot| h.merge(slot => total_slotcapacity) }
       @booked_slots_index = @place_index.keys.inject({}) { |h, place_id| h.merge(place_id => {}) }
+      @max_capacity = capacity_index.keys.max.to_i
       @booking_index = {}
       @total = 0
       @booked_capacity = 0
+
     end
 
     def slot_blocked?(slot)
@@ -88,20 +91,20 @@ module Trixer
 
     def booking_slots(booking:)
       slot = booking.slot
-      return [] if slot.nil? || !slot.is_a?(Integer)
-      
+      return [] if !slot.is_a?(Integer) || slot_blocked?(slot)
+
       (slot..slot+booking.duration-1).to_a
     end
 
     def add_booking(booking:, place_restriction: nil, dry_run: false, check_limits: true)
+      return :invalid_capacity if !booking.amount.is_a?(Integer) || booking.amount > max_capacity
+
       booking_slots = booking_slots(booking: booking)
 
       # there is some slot that would be booked which is not available
       # i.e. [1,2,3,5,6,7] & [3,4,5] = [3,5] => slot 4 is not available
       # or   [1,2,3,4] & [3,4,5] = [3,4] => slot 5 is not available
       return :slot_unavailable if (slots & booking_slots).size != booking.duration
-
-      return :slot_blocked if slot_blocked?(booking.slot)
 
       # total limit reached
       return :total_limit_reached if check_limits && limit && (total + booking.amount > limit)

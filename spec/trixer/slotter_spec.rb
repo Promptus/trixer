@@ -78,9 +78,8 @@ RSpec.describe Slotter do
         )
       end
 
-      it do
-        expect(subject.keys).to eql([2, 4, 6, 8])
-      end
+      it { expect(subject.keys).to eql([2, 4, 6, 8]) }
+      it { expect(matrix.max_capacity).to eql(8) }
 
     end
 
@@ -274,7 +273,7 @@ RSpec.describe Slotter do
 
         context "slot blocked" do
           let(:blocked_slots) { [66] }
-          it { is_expected.to eql(:slot_blocked) }
+          it { is_expected.to eql(:slot_unavailable) }
         end
 
         context "slot blocked" do
@@ -379,6 +378,23 @@ RSpec.describe Slotter do
         context do
           let(:booking_slot) { 'my united states of whatever' }
           it { is_expected.to eql(:slot_unavailable) }
+        end
+      end
+
+      context 'capacity exceeded' do
+        let(:booking_amount) { 9 }
+        let(:booking) { Slotter::Booking.new(id: 5, duration: 2, amount: 9, slot: 70) }
+
+        it { is_expected.to eql(:invalid_capacity) }
+
+        context do
+          let(:booking_amount) { 'my united states of whatever' }
+          it { is_expected.to eql(:invalid_capacity) }
+        end
+        
+        context do
+          let(:booking_amount) { nil }
+          it { is_expected.to eql(:invalid_capacity) }
         end
       end
     end
