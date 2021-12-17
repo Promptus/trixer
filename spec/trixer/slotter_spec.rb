@@ -7,6 +7,7 @@ RSpec.describe Slotter do
   let(:limit) { nil }
   let(:slot_limit) { nil }
   let(:blocked_slots) { nil }
+  let(:check_limits) { true }
   let(:matrix) { Slotter.new(slots: slots, places: places, links: links, limit: limit, slot_limit: slot_limit, blocked_slots: blocked_slots) }
 
   let(:place1) { Slotter::Place.new(id: 1, capacity: 2) }
@@ -24,7 +25,7 @@ RSpec.describe Slotter do
 
     before do
       bookings.each do |booking|
-        matrix.add_booking(booking: booking)
+        matrix.add_booking(booking: booking, check_limits: check_limits)
       end
     end
 
@@ -127,8 +128,36 @@ RSpec.describe Slotter do
       end
     end
 
+    describe 'slot_bookable?' do
+      let(:duration) { 4 }
+      let(:slot) { 64 }
+
+      subject { matrix.slot_bookable?(slot: slot, duration: duration) }
+
+      it { is_expected.to be_truthy }
+
+      context do
+        let(:slot) { 70 }
+        it { is_expected.to be_truthy }
+      end
+
+      context do
+        let(:slot) { 71 }
+        it { is_expected.to be_falsy }
+      end
+
+      context do
+        let(:duration) { 3 }
+        let(:slot) { 71 }
+        it { is_expected.to be_truthy }
+      end
+    end
+
+
     describe 'booked_ratio' do
+      let(:check_limits) { false }
       subject { matrix.booked_ratio }
+
       it { is_expected.to eql(0.4) }
     end
 
@@ -487,7 +516,7 @@ RSpec.describe Slotter do
         let(:around_slot) { 66 }
         let(:amount) { 6 }
         let(:slot_limit) { 4 }
-        
+
         it { is_expected.to eql([]) }
       end
 

@@ -46,7 +46,7 @@ module Trixer
       # fill missing links with empty array
       @links = places.inject(links || {}) { |h,place| h[place.id] ? h : h.merge(place.id => []) }
       @total_slotcapacity ||= places.sum(&:capacity)
-      @total_capacity = @total_slotcapacity * (@slots.size - @blocked_slots.size)
+      @total_capacity = @total_slotcapacity * @slots.size
       @place_index = places.sort {|x,y| x.capacity <=> y.capacity }.inject({}) { |h, place| h.merge(place.id => place) }
       @occupied_places_index = slots.inject({}) { |h, slot| h.merge(slot => Set.new) }
       @amount_index = slots.inject({}) { |h, slot| h.merge(slot => 0) }
@@ -61,6 +61,15 @@ module Trixer
 
     def slot_blocked?(slot)
       @blocked_slots.include?(slot)
+    end
+
+    def slot_bookable?(slot:, duration:)
+      return false if slot_blocked?(slot)
+
+      booking_slots = (slot..slot+duration-1).to_a
+      return false if (slots & booking_slots).size != duration
+
+      true
     end
 
     # this index holds all combinations for each capacity
@@ -178,8 +187,6 @@ module Trixer
     end
 
     def booked_ratio
-      # first check if completely booked out
-      # if not: use logic from old matrix
       return 0.0 if total_capacity.zero?
 
       booked_capacity/total_capacity.to_f
