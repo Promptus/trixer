@@ -391,7 +391,7 @@ RSpec.describe Slotter do
           let(:booking_amount) { 'my united states of whatever' }
           it { is_expected.to eql(:invalid_capacity) }
         end
-        
+
         context do
           let(:booking_amount) { nil }
           it { is_expected.to eql(:invalid_capacity) }
@@ -406,7 +406,7 @@ RSpec.describe Slotter do
       let(:check_limits) { true }
       let(:place_restriction) { nil }
 
-      subject { matrix.open_slots(around_slot: around_slot, amount: amount, duration: duration, limit: 4, check_limits: check_limits, place_restriction: place_restriction) }
+      subject { matrix.open_slots(around_slot: around_slot, amount: amount, duration: duration, result_limit: 4, check_limits: check_limits, place_restriction: place_restriction) }
 
       it { is_expected.to eql([70, 69, 68, 67]) }
 
@@ -481,6 +481,14 @@ RSpec.describe Slotter do
           let(:check_limits) { false }
           it { is_expected.to eql([66, 65, 67, 64]) }
         end
+      end
+
+      context 'amount larger than limit' do
+        let(:around_slot) { 66 }
+        let(:amount) { 6 }
+        let(:slot_limit) { 4 }
+        
+        it { is_expected.to eql([]) }
       end
 
       context do

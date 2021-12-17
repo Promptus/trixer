@@ -161,8 +161,10 @@ module Trixer
       return :no_combination_found
     end
 
-    def open_slots(around_slot:, amount:, duration:, limit: 4, check_limits: true, place_restriction: nil)
+    def open_slots(around_slot:, amount:, duration:, result_limit: nil, check_limits: true, place_restriction: nil)
       return [] if amount > capacity_index.keys.last.to_i
+      return [] if check_limits && slot_limit && amount > slot_limit
+      return [] if check_limits && limit && amount > limit 
 
       found_slots = []
       slots.sort { |x,y| (around_slot-x).abs <=> (around_slot-y).abs }.each do |slot|
@@ -170,13 +172,14 @@ module Trixer
         if add_booking(booking: booking, dry_run: true, check_limits: check_limits, place_restriction: place_restriction) == true
           found_slots << slot
         end
-        break if limit && found_slots.size >= limit
+        break if result_limit && found_slots.size >= result_limit
       end
       found_slots
     end
 
     def booked_ratio
-      
+      # first check if completely booked out
+      # if not: use logic from old matrix
       return 0.0 if total_capacity.zero?
 
       booked_capacity/total_capacity.to_f
@@ -190,6 +193,9 @@ module Trixer
     end
 
     def place_slot_data(place_id:)
+      @place_slot_data_index ||= {}
+      return @place_slot_data_index[place_id] if @place_slot_data_index&.dig(place_id)
+
       data = {}
       current_length = 1
       current_booking_length = 1
@@ -230,6 +236,7 @@ module Trixer
         end
         data[slot] = slot_data
       end
+      @place_slot_data_index[place_id] = data
       data
     end
 
