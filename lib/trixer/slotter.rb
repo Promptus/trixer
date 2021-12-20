@@ -199,6 +199,12 @@ module Trixer
       end
     end
 
+    def free_amount_at(slot: slot)
+      slot_free = slot_limit ? (slot_limit - amount_index[slot]) : 999_999
+      total_free = limit ? (limit - total) : 999_999
+      [total_free, slot_free, free_capacity_index[slot]].min
+    end
+
     def place_slot_data(place_id:)
       @place_slot_data_index ||= {}
       return @place_slot_data_index[place_id] if @place_slot_data_index&.dig(place_id)

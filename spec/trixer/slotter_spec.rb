@@ -161,6 +161,71 @@ RSpec.describe Slotter do
       it { is_expected.to eql(0.4) }
     end
 
+    describe "free_amount_at" do
+    #     16:00       17:00       18:00
+    #     64 65 66 67 68 69 70 71 72 73
+    # m    6  6  2  2  2  2  6  6  8  8 free capacity
+    # 1/2  2  2  2  2  3  3  3  3  +  +
+    # 2/2  +  +  +  +  +  +  +  +  +  +
+    # 3/4  +  +  1  1  1  1  +  +  +  +
+      let(:slot) { 64 }
+      subject { matrix.free_amount_at(slot: slot) }
+      
+      it { is_expected.to eql(6) }
+
+      context do
+        let(:slot) { 67 }
+        it { is_expected.to eql(2) }
+      end
+
+      context 'slot limit' do
+        let(:slot_limit) { 6 }
+
+        context do
+          let(:slot) { 64 }
+          it { is_expected.to eql(4) }
+        end
+
+        context do
+          let(:slot) { 67 }
+          it { is_expected.to eql(2) }
+        end
+
+        context do
+          let(:slot) { 72 }
+          it { is_expected.to eql(6) }
+        end
+      end
+
+      context 'limit reached' do
+        let(:limit) { 8 }
+
+        context do
+          let(:slot) { 64 }
+          it { is_expected.to eql(0) }
+        end
+
+        context do
+          let(:slot) { 72 }
+          it { is_expected.to eql(0) }
+        end
+      end
+
+      context 'limit reached with 2 amount' do
+        let(:limit) { 10 }
+
+        context do
+          let(:slot) { 64 }
+          it { is_expected.to eql(2) }
+        end
+
+        context do
+          let(:slot) { 72 }
+          it { is_expected.to eql(2) }
+        end
+      end
+    end
+
     describe 'occupied_places_for' do
       let(:booking_slots) { [64, 65, 66, 67] }
       subject { matrix.occupied_places_for(booking_slots: booking_slots).sort }
