@@ -188,8 +188,8 @@ module Trixer
 
     def booked_ratio
       return 0.0 if total_capacity.zero?
-
-      booked_capacity/total_capacity.to_f
+      free_cap = slots.inject(0) { |sum, slot| free_amount_at(slot: slot) }
+      1-(free_cap/total_capacity.to_f)
     end
 
     def slot_distances
@@ -200,8 +200,8 @@ module Trixer
     end
 
     def free_amount_at(slot: slot)
-      slot_free = slot_limit ? (slot_limit - amount_index[slot]) : 999_999
-      total_free = limit ? (limit - total) : 999_999
+      slot_free = slot_limit ? [0, slot_limit - amount_index[slot]].max : 999_999
+      total_free = limit ? [0, limit - total].max : 999_999
       [total_free, slot_free, free_capacity_index[slot]].min
     end
 
