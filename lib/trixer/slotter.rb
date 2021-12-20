@@ -56,7 +56,6 @@ module Trixer
       @booking_index = {}
       @total = 0
       @booked_capacity = 0
-
     end
 
     def slot_blocked?(slot)
@@ -163,6 +162,7 @@ module Trixer
           @booking_index[booking.id] = booking
           @booked_capacity += booking.duration * booking.amount
           @total += booking.amount
+          @place_slot_data_index = nil
           return true
         end
       end
