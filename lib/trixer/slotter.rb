@@ -93,6 +93,13 @@ module Trixer
       @capacity_index
     end
 
+    def max_capacity_for(place_id:)
+      capacity_index.reverse_each do |cap, combs|
+        return cap if combs.any? { |comb| comb.include?(place_id) }
+      end
+      place_index[place_id].capacity
+    end
+
     def occupied_places_for(booking_slots:)
       occupied_places_index.values_at(*booking_slots).inject(Set.new) { |s,op| s | op }
     end
@@ -213,7 +220,10 @@ module Trixer
       current_booking_length = 1
       current_booking = nil
       place = @place_index[place_id]
-      base_data = { capacity: place.capacity }
+      base_data = {
+        capacity: place.capacity,
+        max_capacity: max_capacity_for(place_id: place.id)
+      }
       slots.reverse.each_with_index do |slot, idx|
         slot_data = base_data.dup
         slot_blocked = slot_blocked?(slot)
