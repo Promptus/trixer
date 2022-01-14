@@ -96,18 +96,11 @@ module Trixer
       @capacity_index
     end
 
-    def max_capacity_for(place_id:, slot:)
+    def max_capacity_for(place_id:)
       capacity_index.reverse_each do |cap, combs|
-        return cap if combs.any? do |comb|
-          if (comb & occupied_places_index[slot]).any?
-            # an occupied place is part of the combination
-            false
-          else
-            comb.include?(place_id)
-          end
-        end
+        return cap if combs.any? { |comb| comb.include?(place_id) }
       end
-      0
+      place_index[place_id].capacity
     end
 
     def occupied_places_for(booking_slots:)

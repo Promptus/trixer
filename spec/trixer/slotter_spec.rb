@@ -86,38 +86,18 @@ RSpec.describe Slotter do
 
     describe 'max_capacity_for' do
       let(:place_id) { 1 }
-      subject { matrix.max_capacity_for(place_id: place_id, slot: slot) }
+      subject { matrix.max_capacity_for(place_id: place_id) }
+      
+      it { is_expected.to eql(8) }
 
-      context 'slot 64' do
-        let(:slot) { 64 }
-        it { is_expected.to eql(0) }
+      context do
+        let(:links) { { 1 => [3] } }
 
-        context do
-          let(:links) { { 1 => [3] } }
-
-          it { is_expected.to eql(0) }
-
-          context do
-            let(:place_id) { 2 }
-            it { is_expected.to eql(2) }
-          end
-        end
-      end
-
-      context 'slot 67' do
-        let(:slot) { 67 }
-        let(:place_id) { 2 }
-        it { is_expected.to eql(2) }
-      end
-
-      context 'slot 67' do
-        let(:slot) { 72 }
-        it { is_expected.to eql(8) }
+        it { is_expected.to eql(6) }
 
         context do
-          let(:links) { { 1 => [3] } }
-
-          it { is_expected.to eql(6) }
+          let(:place_id) { 2 }
+          it { is_expected.to eql(2) }
         end
       end
     end
