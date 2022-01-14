@@ -87,7 +87,7 @@ RSpec.describe Slotter do
     describe 'max_capacity_for' do
       let(:place_id) { 1 }
       subject { matrix.max_capacity_for(place_id: place_id, slot: slot) }
-      
+
       context 'slot 64' do
         let(:slot) { 64 }
         it { is_expected.to eql(0) }
@@ -208,7 +208,7 @@ RSpec.describe Slotter do
     # 3/4  +  +  1  1  1  1  +  +  +  +
       let(:slot) { 64 }
       subject { matrix.free_amount_at(slot: slot) }
-      
+
       it { is_expected.to eql(6) }
 
       context do
@@ -286,102 +286,6 @@ RSpec.describe Slotter do
         let(:booking_slots) { [72, 73] }
 
         it { is_expected.to eql([]) }
-      end
-    end
-
-    describe 'place_slot_data' do
-      let(:slots) { (60..62).to_a + (64..73).to_a } # 16:00 - 18:15
-      let(:place_id) { 1 }
-
-      subject { matrix.place_slot_data(place_id: place_id) }
-
-      it { expect(subject.sort.map { |_, data| data[:free_duration][:rest] }).to eql([3,2,1,0,0,0,0,0,0,0,0,2,1]) }
-      it { expect(subject[60]).to eql(capacity: 2, max_capacity: 8, free_duration: { rest: 3 }) }
-      it { expect(subject[64]).to eql(capacity: 2, max_capacity: 0, booking: 2, free_duration: { rest: 0, 2 => 4 }) }
-      it { expect(subject[65]).to eql(capacity: 2, max_capacity: 0, booking: 2, free_duration: { rest: 0, 2 => 3 }) }
-      it { expect(subject[67]).to eql(capacity: 2, max_capacity: 0, booking: 2, free_duration: { rest: 0, 2 => 1 }) }
-      it { expect(subject[70]).to eql(capacity: 2, max_capacity: 0, booking: 3, free_duration: { rest: 0, 3 => 4 }) }
-      it { expect(subject[71]).to eql(capacity: 2, max_capacity: 0, booking: 3, free_duration: { rest: 0, 3 => 3 }) }
-      it { expect(subject[72]).to eql(capacity: 2, max_capacity: 8, free_duration: { rest: 2 }) }
-
-      context do
-        let(:place_id) { 2 }
-        it { expect(subject.sort.map { |_, data| data[:free_duration][:rest] }).to eql([3,2,1,10,9,8,7,6,5,4,3,2,1]) }
-        it { expect(subject.sort.map { |_, data| data[:max_capacity] }).to eql([8,8,8,6,6,2,2,2,2,6,6,8,8]) }
-      end
-
-      context do
-        let(:place_id) { 3 }
-        it { expect(subject.sort.map { |_, data| data[:free_duration][:rest] }).to eql([3,2,1,2,1,0,0,0,0,4,3,2,1]) }
-        it { expect(subject.sort.map { |_, data| data[:max_capacity] }).to eql([8,8,8,6,6,0,0,0,0,6,6,8,8]) }
-      end
-
-      context do
-        #     16:00       17:00       18:00
-        #     60 61 62 64 65 66 67 68 69 70 71 72 73 74 75 76 77
-        # 1/2  +  +  +  1  1  1  1  +  +  2  2  2  2  +  3  3  3
-        # 2/2  +  +  +  +  +  +  +  +  +  +  +  +  +  +  +  +  +
-        # 3/4  +  +  +  +  +  +  +  +  +  +  4  4  4  4  +  +  +
-        let(:slots) { (60..62).to_a + (64..77).to_a }
-        let(:booking1) { Slotter::Booking.new(id: 1, duration: 4, amount: 2, slot: 64) }
-        let(:booking2) { Slotter::Booking.new(id: 2, duration: 4, amount: 2, slot: 70) }
-        let(:booking3) { Slotter::Booking.new(id: 3, duration: 3, amount: 2, slot: 75) }
-        let(:booking4) { Slotter::Booking.new(id: 4, duration: 4, amount: 4, slot: 71) }
-        let(:bookings) { [booking1, booking2, booking3, booking4] }
-
-        it { expect(subject[60]).to eql(capacity: 2, max_capacity: 8, free_duration: { rest: 3 }) }
-        it { expect(subject[61]).to eql(capacity: 2, max_capacity: 8, free_duration: { rest: 2 }) }
-        it { expect(subject[62]).to eql(capacity: 2, max_capacity: 8, free_duration: { rest: 1 }) }
-        it { expect(subject[64]).to eql(capacity: 2, max_capacity: 0, booking: 1, free_duration: { rest: 0, 1 => 6 }) }
-        it { expect(subject[65]).to eql(capacity: 2, max_capacity: 0, booking: 1, free_duration: { rest: 0, 1 => 5 }) }
-        it { expect(subject[66]).to eql(capacity: 2, max_capacity: 0, booking: 1, free_duration: { rest: 0, 1 => 4 }) }
-        it { expect(subject[67]).to eql(capacity: 2, max_capacity: 0, booking: 1, free_duration: { rest: 0, 1 => 3 }) }
-        it { expect(subject[68]).to eql(capacity: 2, max_capacity: 8, free_duration: { rest: 2, 2 => 7 }) }
-        it { expect(subject[69]).to eql(capacity: 2, max_capacity: 8, free_duration: { rest: 1, 2 => 6 }) }
-        it { expect(subject[70]).to eql(capacity: 2, max_capacity: 0, booking: 2, free_duration: { rest: 0, 2 => 5 }) }
-        it { expect(subject[71]).to eql(capacity: 2, max_capacity: 0, booking: 2, free_duration: { rest: 0, 2 => 4 }) }
-        it { expect(subject[73]).to eql(capacity: 2, max_capacity: 0, booking: 2, free_duration: { rest: 0, 2 => 2 }) }
-        it { expect(subject[74]).to eql(capacity: 2, max_capacity: 4, free_duration: { rest: 1, 3 => 4 }) }
-        it { expect(subject[75]).to eql(capacity: 2, max_capacity: 0, booking: 3, free_duration: { rest: 0, 3 => 3 }) }
-        it { expect(subject[76]).to eql(capacity: 2, max_capacity: 0, booking: 3, free_duration: { rest: 0, 3 => 2 }) }
-        it { expect(subject[77]).to eql(capacity: 2, max_capacity: 0, booking: 3, free_duration: { rest: 0, 3 => 1 }) }
-
-        context do
-          let(:place_id) { 3 }
-          it { expect(subject[61]).to eql(capacity: 4, max_capacity: 8, free_duration: { rest: 2 }) }
-          it { expect(subject[64]).to eql(capacity: 4, max_capacity: 6, free_duration: { rest: 7, 4 => 14 }) }
-          it { expect(subject[65]).to eql(capacity: 4, max_capacity: 6, free_duration: { rest: 6, 4 => 13 }) }
-          it { expect(subject[66]).to eql(capacity: 4, max_capacity: 6, free_duration: { rest: 5, 4 => 12 }) }
-          it { expect(subject[67]).to eql(capacity: 4, max_capacity: 6, free_duration: { rest: 4, 4 => 11 }) }
-          it { expect(subject[68]).to eql(capacity: 4, max_capacity: 8, free_duration: { rest: 3, 4 => 10 }) }
-          it { expect(subject[69]).to eql(capacity: 4, max_capacity: 8, free_duration: { rest: 2, 4 => 9 }) }
-          it { expect(subject[70]).to eql(capacity: 4, max_capacity: 6, free_duration: { rest: 1, 4 => 8 }) }
-          it { expect(subject[71]).to eql(capacity: 4, max_capacity: 0, booking: 4, free_duration: { rest: 0, 4 => 7 }) }
-          it { expect(subject[72]).to eql(capacity: 4, max_capacity: 0, booking: 4, free_duration: { rest: 0, 4 => 6 }) }
-          it { expect(subject[74]).to eql(capacity: 4, max_capacity: 0, booking: 4, free_duration: { rest: 0, 4 => 4 }) }
-        end
-
-                #     16:00       17:00       18:00
-        #     60 61 62 64 65 66 67 68 69 70 71 72 73 74 75 76 77
-        # 1/2  +  +  +  1  1  1  1  +  +  2  2  2  2  +  3  3  3
-        # 2/2  +  +  +  +  +  +  +  +  +  +  +  +  +  +  +  +  +
-        # 3/4  +  +  +  +  +  +  +  +  +  +  4  4  4  4  +  +  +
-        context do
-          let(:place_id) { 3 }
-          let(:blocked_slots) { [66,67,68,72,73] }
-
-          it { expect(subject[64]).to eql(capacity: 4, max_capacity: 6, free_duration: { rest: 7, 4 => 14 }) }
-          it { expect(subject[65]).to eql(capacity: 4, max_capacity: 6, free_duration: { rest: 6, 4 => 13 }) }
-          it { expect(subject[66]).to eql(capacity: 4, max_capacity: 6, free_duration: { rest: 0, 4 => 0 }) }
-          it { expect(subject[67]).to eql(capacity: 4, max_capacity: 6, free_duration: { rest: 0, 4 => 0 }) }
-          it { expect(subject[68]).to eql(capacity: 4, max_capacity: 8, free_duration: { rest: 0, 4 => 0 }) }
-          it { expect(subject[69]).to eql(capacity: 4, max_capacity: 8, free_duration: { rest: 2, 4 => 9 }) }
-          it { expect(subject[70]).to eql(capacity: 4, max_capacity: 6, free_duration: { rest: 1, 4 => 8 }) }
-          it { expect(subject[71]).to eql(capacity: 4, max_capacity: 0, booking: 4, free_duration: { rest: 0, 4 => 7 }) }
-          it { expect(subject[72]).to eql(capacity: 4, max_capacity: 0, booking: 4, free_duration: { rest: 0, 4 => 0 }) }
-          it { expect(subject[73]).to eql(capacity: 4, max_capacity: 0, booking: 4, free_duration: { rest: 0, 4 => 0 }) }
-          it { expect(subject[74]).to eql(capacity: 4, max_capacity: 0, booking: 4, free_duration: { rest: 0, 4 => 4 }) }
-        end
       end
     end
 
