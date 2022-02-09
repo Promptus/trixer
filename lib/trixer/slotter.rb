@@ -2,7 +2,7 @@ module Trixer
   class Slotter
 
     Booking = Struct.new(:id, :slot, :duration, :amount, :places, keyword_init: true)
-    Place = Struct.new(:id, :capacity, :bookings, keyword_init: true)
+    Place = Struct.new(:id, :capacity, :priority, :bookings, keyword_init: true)
 
     # for example [64..88] => 16:00 - 22:00
     attr_reader :slots
@@ -91,7 +91,16 @@ module Trixer
       end
       # sort from smaller combinations to bigger combinations
       @capacity_index.each do |capacity, comb|
-        @capacity_index[capacity].sort! { |c1, c2| c1.size <=> c2.size }
+        @capacity_index[capacity].sort! do |c1, c2|
+          if c1.size == c2.size
+            c1prio = c1.map { |place_id| place_index[place_id].priority || 100_000 }.min
+            c2prio = c2.map { |place_id| place_index[place_id].priority || 100_000 }.min
+            # byebug
+            c1prio <=> c2prio
+          else
+            c1.size <=> c2.size
+          end
+        end
       end
       @capacity_index
     end
