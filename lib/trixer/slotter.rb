@@ -190,7 +190,7 @@ module Trixer
     end
 
     def open_slots(around_slot:, amount:, duration:, result_limit: nil, check_limits: true, place_restriction: nil)
-      return [] if amount > capacity_index.keys.last.to_i
+      return [] if amount > max_capacity
       return [] if check_limits && slot_limit && amount > slot_limit
       return [] if check_limits && limit && amount > limit
 
