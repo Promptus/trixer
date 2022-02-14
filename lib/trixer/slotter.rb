@@ -74,6 +74,21 @@ module Trixer
       true
     end
 
+    def linksize_index
+      @linksize_index ||= begin
+        @linksize_index = {}
+        links.each do |place_id, lnks|
+          @linksize_index[place_id] ||=0
+          @linksize_index[place_id] += lnks.size
+          lnks.each do |linked_id|
+            @linksize_index[linked_id] ||= 0
+            @linksize_index[linked_id] += 1
+          end
+        end
+        @linksize_index
+      end
+    end
+
     # this index holds all combinations for each capacity
     # hash: capacity => [[t1], [t2], [t1, t2]]
     def capacity_index
@@ -93,8 +108,8 @@ module Trixer
       @capacity_index.each do |capacity, comb|
         @capacity_index[capacity].sort! do |c1, c2|
           if c1.size == c2.size
-            links1 = c1.inject(0) { |sum, place_id| sum += links[place_id].size }
-            links2 = c2.inject(0) { |sum, place_id| sum += links[place_id].size }
+            links1 = c1.inject(0) { |sum, place_id| sum += (linksize_index[place_id] || 0) }
+            links2 = c2.inject(0) { |sum, place_id| sum += (linksize_index[place_id] || 0) }
             if links1 == links2
               # same amount of links: sort by priority
               c1prio = c1.map { |place_id| place_index[place_id].priority || 100_000 }.min

@@ -61,6 +61,12 @@ RSpec.describe Slotter do
       it { is_expected.to eql(1 => place1, 2 => place2, 3 => place3) }
     end
 
+    describe 'linksize_index' do
+      subject { matrix.linksize_index }
+
+      it { is_expected.to eql(1 => 1, 2 => 2, 3 => 1) }
+    end
+
     describe 'booking_index' do
       subject { matrix.booking_index }
 
@@ -87,12 +93,12 @@ RSpec.describe Slotter do
         let(:place2) { Slotter::Place.new(id: 2, capacity: 2, priority: 1) }
         let(:place3) { Slotter::Place.new(id: 3, capacity: 4, priority: nil) }
 
+        let(:links) { {} }
+
         it do
           is_expected.to eql(
             2 => [Set.new([2]), Set.new([1])],
-            4 => [Set.new([3]), Set.new([1, 2])],
-            6 => [Set.new([2, 3])],
-            8 => [Set.new([1, 2, 3])]
+            4 => [Set.new([3])]
           )
         end
       end
