@@ -82,7 +82,7 @@ RSpec.describe Slotter do
       it { expect(subject.keys).to eql([2, 4, 6, 8]) }
       it { expect(matrix.max_capacity).to eql(8) }
 
-      context do
+      context 'sort by priority' do
         let(:place1) { Slotter::Place.new(id: 1, capacity: 2, priority: 2) }
         let(:place2) { Slotter::Place.new(id: 2, capacity: 2, priority: 1) }
         let(:place3) { Slotter::Place.new(id: 3, capacity: 4, priority: nil) }
@@ -93,6 +93,22 @@ RSpec.describe Slotter do
             4 => [Set.new([3]), Set.new([1, 2])],
             6 => [Set.new([2, 3])],
             8 => [Set.new([1, 2, 3])]
+          )
+        end
+      end
+
+      context 'sort by less links' do
+        let(:place1) { Slotter::Place.new(id: 1, capacity: 2, priority: 1) }
+        let(:place2) { Slotter::Place.new(id: 2, capacity: 2, priority: 2) }
+        let(:place3) { Slotter::Place.new(id: 3, capacity: 4, priority: 3) }
+
+        let(:links) { { 1 => [3] } }
+
+        it do
+          is_expected.to eql(
+            2 => [Set.new([2]), Set.new([1])],
+            4 => [Set.new([3])],
+            6 => [Set.new([1, 3])]
           )
         end
       end

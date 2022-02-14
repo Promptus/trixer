@@ -93,10 +93,17 @@ module Trixer
       @capacity_index.each do |capacity, comb|
         @capacity_index[capacity].sort! do |c1, c2|
           if c1.size == c2.size
-            c1prio = c1.map { |place_id| place_index[place_id].priority || 100_000 }.min
-            c2prio = c2.map { |place_id| place_index[place_id].priority || 100_000 }.min
-            # byebug
-            c1prio <=> c2prio
+            links1 = c1.inject(0) { |sum, place_id| sum += links[place_id].size }
+            links2 = c2.inject(0) { |sum, place_id| sum += links[place_id].size }
+            if links1 == links2
+              # same amount of links: sort by priority
+              c1prio = c1.map { |place_id| place_index[place_id].priority || 100_000 }.min
+              c2prio = c2.map { |place_id| place_index[place_id].priority || 100_000 }.min
+              c1prio <=> c2prio
+            else
+              # prioritize cominations with less links
+              links1 <=> links2
+            end
           else
             c1.size <=> c2.size
           end
