@@ -50,7 +50,7 @@ module Trixer
       @links = places.inject(links || {}) { |h,place| h[place.id] ? h : h.merge(place.id => []) }
       @total_slotcapacity ||= places.sum(&:capacity)
       @total_capacity = @total_slotcapacity * @slots.size
-      @place_index = places.sort {|x,y| x.capacity <=> y.capacity }.inject({}) { |h, place| h.merge(place.id => place) }
+      @place_index = places.sort { |x, y| x.capacity <=> y.capacity }.inject({}) { |h, place| h.merge(place.id => place) }
       @occupied_places_index = slots.inject({}) { |h, slot| h.merge(slot => Set.new) }
       @amount_index = slots.inject({}) { |h, slot| h.merge(slot => 0) }
       @free_capacity_index = slots.inject({}) { |h, slot| h.merge(slot => total_slotcapacity) }
@@ -124,7 +124,8 @@ module Trixer
           end
         end
       end
-      @capacity_index
+      # make sure the capacity index keys are sorted correctly
+      @capacity_index = @capacity_index.sort.to_h
     end
 
     def max_capacity_for(place_id:)
