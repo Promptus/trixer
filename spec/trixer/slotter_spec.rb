@@ -586,6 +586,128 @@ RSpec.describe Slotter do
       it { expect { subject }.to change { matrix.occupied_places_index[66] }.from(Set.new).to(Set.new([2])) }
     end
   end
+
+  # blocked slots restrict where a new booking may start. A booking that
+  # already exists has to occupy its slots wherever it starts.
+  describe 'add_booking with check_blocked' do
+    #     40 41 42 43 44 45 46 47 48 49 50 51
+    #      +  b  b  b  +  b  b  b  +  b  b  b   (b = blocked start, aligned to duration 4)
+    let(:slots) { (40..51).to_a }
+    let(:blocked_slots) { slots - [40, 44, 48] }
+    let(:places) { [place1] }
+    let(:links) { {} }
+
+    let(:check_blocked) { false }
+    let(:dry_run) { false }
+    let(:booking) { Slotter::Booking.new(id: 1, duration: 4, amount: 2, slot: 41) }
+    let(:covered_slots) { [41, 42, 43, 44] }
+
+    let(:index_snapshot) do
+      -> {
+        Marshal.load(Marshal.dump([
+          matrix.booked_slots_index, matrix.occupied_places_index, matrix.free_capacity_index,
+          matrix.amount_index, matrix.booking_index, matrix.total, matrix.booked_capacity
+        ]))
+      }
+    end
+
+    subject { matrix.add_booking(booking: booking, check_blocked: check_blocked, dry_run: dry_run) }
+
+    context 'check_blocked false' do
+      it { is_expected.to eql(true) }
+      it { expect { subject }.to change { booking.places }.from(nil).to(Set.new([1])) }
+      it { expect { subject }.to change { matrix.amount_index[41] }.from(0).to(2) }
+      it { expect { subject }.to change { matrix.total }.from(0).to(2) }
+
+      it 'occupies the place on every covered slot' do
+        subject
+        covered_slots.each do |slot|
+          expect(matrix.booked_slots_index[1][slot]).to eql(booking)
+          expect(matrix.occupied_places_index[slot]).to eql(Set.new([1]))
+          expect(matrix.free_capacity_index[slot]).to eql(0)
+        end
+      end
+
+      it 'leaves the other slots untouched' do
+        subject
+        (slots - covered_slots).each do |slot|
+          expect(matrix.booked_slots_index[1][slot]).to be_nil
+          expect(matrix.occupied_places_index[slot]).to eql(Set.new)
+          expect(matrix.free_capacity_index[slot]).to eql(2)
+        end
+      end
+
+      context 'after the booking was placed' do
+        before { subject }
+
+        [40, 44].each do |slot|
+          it "rejects an overlapping new booking at unblocked slot #{slot} on the same place" do
+            new_booking = Slotter::Booking.new(id: 2, duration: 4, amount: 2, slot: slot)
+            expect(matrix.add_booking(booking: new_booking, place_restriction: [1], dry_run: true)).to_not eql(true)
+          end
+        end
+
+        it 'still accepts a new booking that does not overlap' do
+          new_booking = Slotter::Booking.new(id: 2, duration: 4, amount: 2, slot: 48)
+          expect(matrix.add_booking(booking: new_booking, place_restriction: [1], dry_run: true)).to eql(true)
+        end
+
+        it 'leaves the overlapping starts out of open_slots' do
+          expect(matrix.open_slots(around_slot: 44, amount: 2, duration: 4)).to eql([48])
+        end
+
+        it 'still checks occupied places for another booking on a blocked slot' do
+          other = Slotter::Booking.new(id: 2, duration: 4, amount: 2, slot: 42)
+          expect(matrix.add_booking(booking: other, check_blocked: false)).to eql(:out_of_capacity)
+        end
+      end
+
+      context 'booking runs outside of slots' do
+        let(:booking) { Slotter::Booking.new(id: 1, duration: 4, amount: 2, slot: 50) }
+        it { is_expected.to eql(:slot_unavailable) }
+        it { expect { subject }.to_not change { index_snapshot.call } }
+      end
+
+      context 'invalid slot' do
+        let(:booking) { Slotter::Booking.new(id: 1, duration: 4, amount: 2, slot: nil) }
+        it { is_expected.to eql(:slot_unavailable) }
+      end
+
+      context 'dry run' do
+        let(:dry_run) { true }
+        it { is_expected.to eql(true) }
+        it { expect { subject }.to_not change { index_snapshot.call } }
+        it { expect { subject }.to_not change { booking.places } }
+      end
+
+      context 'limits stay independent' do
+        let(:slot_limit) { 1 }
+        it { is_expected.to eql(:slot_limit_reached) }
+
+        it 'is placed with check_limits false' do
+          expect(matrix.add_booking(booking: booking, check_blocked: false, check_limits: false)).to eql(true)
+        end
+      end
+    end
+
+    context 'check_blocked true' do
+      let(:check_blocked) { true }
+      it { is_expected.to eql(:slot_unavailable) }
+      it { expect { subject }.to_not change { index_snapshot.call } }
+    end
+
+    context 'default' do
+      subject { matrix.add_booking(booking: booking) }
+      it { is_expected.to eql(:slot_unavailable) }
+      it { expect { subject }.to_not change { index_snapshot.call } }
+    end
+
+    context 'without the booking' do
+      it 'open_slots only offers the unblocked starts' do
+        expect(matrix.open_slots(around_slot: 44, amount: 2, duration: 4)).to match_array([40, 44, 48])
+      end
+    end
+  end
 end
 
 # big matrix

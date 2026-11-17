@@ -139,17 +139,21 @@ module Trixer
       occupied_places_index.values_at(*booking_slots).inject(Set.new) { |s,op| s | op }
     end
 
-    def booking_slots(booking:)
+    def booking_slots(booking:, check_blocked: true)
       slot = booking.slot
-      return [] if !slot.is_a?(Integer) || slot_blocked?(slot)
+      return [] if !slot.is_a?(Integer)
+      return [] if check_blocked && slot_blocked?(slot)
 
       (slot..slot+booking.duration-1).to_a
     end
 
-    def add_booking(booking:, place_restriction: nil, dry_run: false, check_limits: true)
+    # check_blocked: blocked slots only restrict where a new booking may start.
+    # Pass false for bookings that already exist, so they occupy their slots
+    # even if they start on a blocked slot.
+    def add_booking(booking:, place_restriction: nil, dry_run: false, check_limits: true, check_blocked: true)
       return :invalid_capacity if !booking.amount.is_a?(Integer) || booking.amount > max_capacity
 
-      booking_slots = booking_slots(booking: booking)
+      booking_slots = booking_slots(booking: booking, check_blocked: check_blocked)
 
       # there is some slot that would be booked which is not available
       # i.e. [1,2,3,5,6,7] & [3,4,5] = [3,5] => slot 4 is not available
